@@ -9,3 +9,5 @@ node_modules
 uploads/covers/*
 uploads/avatars/*
 uploads/attachments/*
+
+dist
