@@ -1,11 +1,17 @@
 import express from 'express';
 import authRouter from './modules/auth/auth.controller.js';
 import { errorHandler } from './middlewares/error-handler.js';
-import { PORT } from './config/config.js';
-import { HttpError } from './errors/http-error.js';
+import { PORT } from './config/index.js';
+import { HttpError } from './common/errors/http-error.js';
+import { connectMongo } from './database/mongo.connection.js';
+import { connectRedis } from './database/redis.connection.js';
 
-export function bootstrap() {
+export async function bootstrap() {
   const app = express();
+
+  await Promise.all([connectMongo(), connectRedis()]);
+
+  app.use(express.json());
 
   app.use('/auth', authRouter);
 

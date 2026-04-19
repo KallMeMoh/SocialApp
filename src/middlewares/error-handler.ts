@@ -1,5 +1,5 @@
 import * as z from 'zod';
-import { HttpError } from '../errors/http-error.js';
+import { HttpError } from '../common/errors/http-error.js';
 import type { Request, Response, NextFunction } from 'express';
 
 export const errorHandler = (

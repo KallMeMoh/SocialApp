@@ -1,5 +1,6 @@
 {
   // Visit https://aka.ms/tsconfig to read more about this file
+  "include": ["src"],
   "compilerOptions": {
     // File Layout
     "rootDir": "./src",
@@ -22,9 +23,10 @@
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    // "exactOptionalPropertyTypes": true,
 
     // Style Options
+    "moduleResolution": "nodenext",
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
