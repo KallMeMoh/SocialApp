@@ -1,0 +1,11 @@
+.env
+
+node_modules
+
+.vscode
+
+.github
+
+uploads/covers/*
+uploads/avatars/*
+uploads/attachments/*
