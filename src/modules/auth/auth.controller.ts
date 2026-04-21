@@ -67,7 +67,12 @@ authRouter.post(
   validate(forgetPasswordSchema),
   async (req, res) => {
     await AuthService.resetPassword(req.body.email);
-    return res.status(200).json({ message: 'Please check your inbox' });
+    return res
+      .status(200)
+      .json({
+        message:
+          'You will receive an email shortly if you had registered with us',
+      });
   },
 );
 
