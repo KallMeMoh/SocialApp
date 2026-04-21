@@ -4,7 +4,7 @@ export const passwordResetTemplate = (resetLink: string) => `
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Reset Your SarahaClone Password</title>
+  <title>Reset Your SocialApp Password</title>
 </head>
 <body style="margin:0;padding:0;background-color:#0f0f0f;font-family:'Georgia',serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0f0f0f;padding:48px 16px;">
@@ -15,7 +15,7 @@ export const passwordResetTemplate = (resetLink: string) => `
           <!-- Header -->
           <tr>
             <td style="padding:40px 48px 32px;border-bottom:1px solid #2a2a2a;">
-              <p style="margin:0;font-size:26px;font-weight:700;color:#f5f0e8;letter-spacing:3px;text-transform:uppercase;">SarahaClone</p>
+              <p style="margin:0;font-size:26px;font-weight:700;color:#f5f0e8;letter-spacing:3px;text-transform:uppercase;">SocialApp</p>
               <p style="margin:6px 0 0;font-size:12px;color:#666;letter-spacing:1px;text-transform:uppercase;">Anonymous Messaging</p>
             </td>
           </tr>
@@ -52,7 +52,7 @@ export const passwordResetTemplate = (resetLink: string) => `
           <!-- Footer -->
           <tr>
             <td style="padding:24px 48px;border-top:1px solid #2a2a2a;">
-              <p style="margin:0;font-size:12px;color:#444;">© ${new Date().getFullYear()} SarahaClone. All rights reserved.</p>
+              <p style="margin:0;font-size:12px;color:#444;">© ${new Date().getFullYear()} SocialApp. All rights reserved.</p>
             </td>
           </tr>
 

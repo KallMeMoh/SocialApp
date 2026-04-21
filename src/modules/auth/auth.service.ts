@@ -42,7 +42,7 @@ export const signup = async ({
   sendOTPEmail(
     `otp:signup:${user._id}`,
     user,
-    'Verify your SarahaClone account',
+    'Verify your SocialApp account',
     'complete your registration',
   ).catch((err: unknown) => console.error('Failed to email OTP: ', err));
 
@@ -83,7 +83,7 @@ export const login = async ({
     await sendOTPEmail(
       `auth:login-2fa:${user._id}`,
       user,
-      'Your SarahaClone login confirmation code',
+      'Your SocialApp login confirmation code',
       'confirm your login attempt',
     );
 

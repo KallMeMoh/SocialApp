@@ -13,7 +13,7 @@ export const errorHandler = (
   } else if (err instanceof z.ZodError) {
     return res.status(422).json({
       error: 'Validation failed',
-      // details: err.
+      issues: err.issues,
     });
     // } else if (err instanceof MulterError) {
     // return res.status(422).json({ error: err.message });
@@ -24,5 +24,5 @@ export const errorHandler = (
   }
 
   console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+  return res.status(500).json({ error: 'Internal server error' });
 };

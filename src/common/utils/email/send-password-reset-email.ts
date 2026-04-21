@@ -5,7 +5,7 @@ export const sendPasswordResetEmail = async (email: string, link: string) => {
   await transporter.sendMail({
     from: 'onboarding@resend.dev',
     to: email,
-    subject: 'Reset your SarahaClone password',
+    subject: 'Reset your SocialApp password',
     html: passwordResetTemplate(link),
   });
 };
