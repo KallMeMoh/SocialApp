@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
 export const username = z
-  .string({
-    error: (issue) =>
-      issue.input === undefined ? 'Missing username field' : undefined,
-  })
+  .string()
   .trim()
   .min(3, { error: 'Username must be at least 3 characters' })
   .max(20, { error: 'Username must be at most 20 characters' })
@@ -14,20 +11,14 @@ export const username = z
   });
 
 export const email = z
-  .string({
-    error: (issue) =>
-      issue.input === undefined ? 'Missing email field' : undefined,
-  })
+  .string()
   .trim()
   .max(254, { error: 'Invalid email address' })
   .toLowerCase()
   .pipe(z.email({ error: 'Invalid email address' }));
 
 export const password = z
-  .string({
-    error: (issue) =>
-      issue.input === undefined ? 'Missing password fields' : undefined,
-  })
+  .string()
   .min(8, { error: 'Passwords must be at least 8 characters' })
   .max(72, { error: 'Passwords must be at most 72 characters' })
   .regex(/[A-Z]/, {
@@ -44,23 +35,16 @@ export const password = z
   });
 
 export const id = z
-  .string({
-    error: (issue) => (issue.input === undefined ? 'Missing ID' : undefined),
-  })
+  .string()
   .regex(/^[a-fA-F0-9]{24}$/, { error: 'Invalid ID' });
 
 export const otp = z
-  .string({
-    error: (issue) =>
-      issue.input === undefined ? 'Missing OTP code' : undefined,
-  })
+  .string()
   .length(6, { error: 'OTP must be 6 digits' })
   .regex(/^[0-9]+$/, { error: 'OTP must be numeric' });
 
 export const token = z
-  .string({
-    error: (issue) => (issue.input === undefined ? 'Missing token' : undefined),
-  })
+  .string()
   .regex(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/, {
     error: 'Malformed token',
   });

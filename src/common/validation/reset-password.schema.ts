@@ -15,13 +15,8 @@ export const resetPasswordSchema = z.object({
   query: z.object({ ln }),
 
   params: z.object({
-    token: z
-      .string({
-        error: (issue) =>
-          issue.input === undefined ? 'Missing token' : undefined,
-      })
-      .regex(/^[A-Za-z0-9]{64}$/, {
-        error: 'Malformed token',
-      }),
+    token: z.string().regex(/^[A-Za-z0-9]{64}$/, {
+      error: 'Malformed token',
+    }),
   }),
 });
