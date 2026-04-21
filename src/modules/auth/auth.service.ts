@@ -207,6 +207,7 @@ export const verifyResetPassword = async (
   token: string,
   new_password: string,
 ) => {
+  console.log(new_password, token);
   const userId = await RedisClient.get(`auth:password-reset:${token}`);
   const user = await UserModel.findById(userId);
 
