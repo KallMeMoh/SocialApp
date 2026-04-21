@@ -8,20 +8,16 @@ import { getSignature } from '../common/utils/auth/token-signature.js';
 import { RedisClient } from '../database/redis.connection.js';
 
 export const authenticate =
-  (strict: boolean = true, tokenType = TokenType.Access) =>
+  (tokenType = TokenType.Access) =>
   async (req: Request, _: Response, next: NextFunction) => {
-    const fail = (message: string) => {
-      if (!strict) next();
-      else throw new HttpError(401, message);
-    };
-
     const authHeader = req.headers?.authorization;
-    if (!authHeader) return fail(`Missing authorization header`);
+    if (!authHeader) throw new HttpError(401, `Missing authorization header`);
 
-    if (!authHeader.startsWith('Bearer ')) return fail('Invalid bearer key');
+    if (!authHeader.startsWith('Bearer '))
+      throw new HttpError(401, 'Invalid bearer key');
 
     const token = authHeader.split(' ')[1]?.trim();
-    if (!token) return fail('Missing Token');
+    if (!token) throw new HttpError(401, 'Missing Token');
 
     try {
       const { aud } = (jwt.decode(token) ?? {}) as JwtPayload;
@@ -31,15 +27,15 @@ export const authenticate =
       ];
 
       if (!role || !type || type !== tokenType)
-        return fail('Invalid or malformed token');
+        throw new HttpError(401, 'Invalid or malformed token');
 
       const signature = getSignature(role)[`${tokenType}Signature`];
-      if (!signature) return fail('Invalid or malformed token');
+      if (!signature) throw new HttpError(401, 'Invalid or malformed token');
 
       const { sub, jti } = jwt.verify(token, signature) as JwtPayload;
 
       if (await RedisClient.get(`jwt:blacklist:${jti}`))
-        return fail('Invalid or malformed token');
+        throw new HttpError(401, 'Invalid or malformed token');
 
       req.userId = sub;
       req.tokenId = jti;
@@ -47,6 +43,6 @@ export const authenticate =
       next();
     } catch (err) {
       if (err instanceof HttpError) throw err;
-      return fail('Invalid or malformed token');
+      throw new HttpError(401, 'Invalid or malformed token');
     }
   };

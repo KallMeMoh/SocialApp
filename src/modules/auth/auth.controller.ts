@@ -50,7 +50,7 @@ authRouter.post('/oauth/login/google', async (req, res) => {
 
 authRouter.post(
   '/token/refresh',
-  authenticate(true, TokenType.Refresh),
+  authenticate(TokenType.Refresh),
   async (req, res) => {
     const accessToken = await AuthService.rotateToken(
       req.userId!,
@@ -63,7 +63,7 @@ authRouter.post(
 );
 
 authRouter.post(
-  '/password/forget',
+  '/forget-password',
   validate(forgetPasswordSchema),
   async (req, res) => {
     await AuthService.resetPassword(req.body);
@@ -72,7 +72,7 @@ authRouter.post(
 );
 
 authRouter.post(
-  '/password/reset/:token',
+  '/reset-password/:token',
   validate(resetPasswordSchema),
   async (req, res) => {
     await AuthService.verifyResetPassword(
