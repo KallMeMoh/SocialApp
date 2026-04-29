@@ -1,6 +1,6 @@
 import { Router } from 'express';
 
-import * as AuthService from './auth.service.js';
+import AuthService from './auth.service.js';
 import { validate } from '../../middlewares/validation.js';
 import { signupSchema } from '../../common/validation/signup.schema.js';
 import { loginSchema } from '../../common/validation/login.schema.js';
