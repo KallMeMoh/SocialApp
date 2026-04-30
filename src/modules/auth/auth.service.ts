@@ -1,5 +1,5 @@
 import { compare, hash } from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import { randomBytes } from 'node:crypto';
 
@@ -11,16 +11,22 @@ import {
 } from '../../config/index.js';
 import { HttpError } from '../../common/errors/http-error.js';
 import { AuthProvider, TokenType } from '../../common/types/auth.types.js';
-import { UserModel } from '../../database/models/user.model.js';
-import { RedisClient } from '../../database/redis.connection.js';
 import { generateTokens } from '../../common/utils/auth/generate-token.js';
 import { sendOTPEmail } from '../../common/utils/email/send-otp-email.js';
 import { sendPasswordResetEmail } from '../../common/utils/email/send-password-reset-email.js';
+import AuthCacheRepository from '../../database/repository/auth-cache.repository.js';
+import UserRepository from '../../database/repository/user.repository.js';
+import type { User } from '../../common/types/user.type.js';
 
 class AuthService {
-  static client = new OAuth2Client();
+  client = new OAuth2Client();
 
-  static async signup({
+  constructor(
+    private userRepository: typeof UserRepository,
+    private authCacheRepository: typeof AuthCacheRepository,
+  ) {}
+
+  async signup({
     username,
     email,
     password,
@@ -29,18 +35,18 @@ class AuthService {
     email: string;
     password: string;
   }) {
-    const userExists = await UserModel.exists({ email });
+    const userExists = await this.userRepository.existsByEmail(email);
 
     if (userExists) throw new HttpError(409, 'User already exists');
 
-    const data = {
+    const data: User = {
       username,
       email,
       hashed_password: await hash(password, SALT_ROUNDS),
       provider: AuthProvider.System,
     };
 
-    const user = await UserModel.create(data);
+    const user = await this.userRepository.create(data);
 
     sendOTPEmail(
       `otp:signup:${user._id}`,
@@ -52,22 +58,23 @@ class AuthService {
     return user;
   }
 
-  static async login({ email, password }: { email: string; password: string }) {
-    let user = await UserModel.findOne({ email });
+  async login({ email, password }: { email: string; password: string }) {
+    let user = await this.userRepository.findByEmail(email);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
 
-    const tries = await RedisClient.get(`auth:login-counter:${user._id}`);
-    if (tries && parseInt(tries) > 5)
+    const loginAttempts = await this.authCacheRepository.getLoginAttempts(
+      user._id,
+    );
+    if (loginAttempts && parseInt(loginAttempts) > 5)
       throw new HttpError(401, 'Account temporarily banned, try again later');
 
     const matchedPassword = await compare(password, user.hashed_password!);
     if (!matchedPassword) {
-      const loginCounter = await RedisClient.incr(
-        `auth:login-counter:${user._id}`,
-      );
+      const loginCounter =
+        await this.authCacheRepository.incrementLoginAttempts(user._id);
       if (loginCounter === 1)
-        RedisClient.expire(`auth:login-counter:${user._id}`, 1800);
+        this.authCacheRepository.expireLoginAttempts(user._id);
       throw new HttpError(401, 'Invalid credentials');
     }
 
@@ -88,39 +95,43 @@ class AuthService {
         requires2FA: true,
         token,
       };
-    } else return generateTokens(user._id, user.role);
+    } else return generateTokens(user._id, user.role!);
   }
 
-  static async confirmLogin({ otp, token }: { otp: string; token: string }) {
-    const { sub = undefined } = jwt.verify(token, PENDING_AUTH_SIGNATURE);
+  async confirmLogin({ otp, token }: { otp: string; token: string }) {
+    const { sub = undefined } = jwt.verify(
+      token,
+      PENDING_AUTH_SIGNATURE,
+    ) as JwtPayload;
 
     const [user, code] = await Promise.all([
-      UserModel.findById(sub),
-      RedisClient.get(`auth:login-2fa:${sub}`),
+      this.userRepository.findById(sub ?? ''),
+      this.authCacheRepository.get2FACode(sub ?? ''),
     ]);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
     if (!code) throw new HttpError(404, 'OTP Expired, please login again');
 
-    const tries = await RedisClient.get(`auth:login-counter:${user._id}`);
+    const loginAttempts = await this.authCacheRepository.getLoginAttempts(
+      user._id,
+    );
 
-    if (tries && parseInt(tries) > 5)
+    if (loginAttempts && parseInt(loginAttempts) > 5)
       throw new HttpError(401, 'Account temporarily banned, try again later');
 
     if (otp !== code) {
-      const loginCounter = await RedisClient.incr(
-        `auth:login-counter:${user._id}`,
-      );
+      const loginCounter =
+        await this.authCacheRepository.incrementLoginAttempts(user._id);
       if (loginCounter === 1)
-        RedisClient.expire(`auth:login-counter:${user._id}`, 1800);
+        this.authCacheRepository.expireLoginAttempts(user._id);
       throw new HttpError(401, 'Invalid credentials');
     }
 
-    return generateTokens(user._id, user.role);
+    return generateTokens(user._id, user.role!);
   }
 
-  static async googleSignup(idToken: string) {
-    const ticket = await AuthService.client.verifyIdToken({
+  async googleSignup(idToken: string) {
+    const ticket = await this.client.verifyIdToken({
       idToken,
       audience: CLIENT_ID,
     });
@@ -129,21 +140,21 @@ class AuthService {
     if (!payload) throw new HttpError(400, 'bad request');
     const { given_name, email, picture, email_verified } = payload;
 
-    const user = await UserModel.findOne({ email });
+    const user = await this.userRepository.findByEmail(email ?? '');
 
     if (user) throw new HttpError(409, 'Account already exists');
 
-    await UserModel.create({
-      username: given_name,
-      email,
+    await this.userRepository.create({
+      username: given_name!,
+      email: email!,
       verified: email_verified,
       avatar: picture,
       provider: AuthProvider.Google,
     });
   }
 
-  static async googleLogin({ idToken }: { idToken: string }) {
-    const ticket = await AuthService.client.verifyIdToken({
+  async googleLogin({ idToken }: { idToken: string }) {
+    const ticket = await this.client.verifyIdToken({
       idToken,
       audience: CLIENT_ID,
     });
@@ -151,52 +162,47 @@ class AuthService {
     const payload = ticket.getPayload();
     if (!payload) throw new HttpError(400, 'bad request');
 
-    const user = await UserModel.findOne({
-      email: payload.email,
-      provider: AuthProvider.Google,
-    });
+    const user = await this.userRepository.findByEmailAndProvider(
+      payload.email ?? '',
+      AuthProvider.Google,
+    );
 
     if (!user) throw new HttpError(401, 'Invalid credentials');
 
-    return generateTokens(user._id, user.role);
+    return generateTokens(user._id, user.role!);
   }
 
-  static async rotateToken(userId: string, jti: string) {
-    const user = await UserModel.findById(userId);
+  async rotateToken(userId: string, jti: string) {
+    const user = await this.userRepository.findById(userId);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
 
     const { accessToken: newAccessToken } = generateTokens(
       user._id,
-      user.role,
+      user.role!,
       jti,
     );
 
     return newAccessToken;
   }
 
-  static async resetPassword(email: string) {
-    const user = await UserModel.findOne({ email });
+  async resetPassword(email: string) {
+    const user = await this.userRepository.findByEmail(email);
 
     if (!user) return;
 
     const token = randomBytes(32).toString('hex');
-    await RedisClient.set(`auth:password-reset:${token}`, `${user._id}`, {
-      expiration: {
-        type: 'EX',
-        value: 900,
-      },
-    });
+    await this.authCacheRepository.setPasswordResetToken(token, user._id);
     await sendPasswordResetEmail(
       user.email,
       `${FRONTEND_URL}/reset-password?token=${token}`,
     );
   }
 
-  static async verifyResetPassword(token: string, new_password: string) {
+  async verifyResetPassword(token: string, new_password: string) {
     console.log(new_password, token);
-    const userId = await RedisClient.get(`auth:password-reset:${token}`);
-    const user = await UserModel.findById(userId);
+    const userId = await this.authCacheRepository.getPasswordResetToken(token);
+    const user = await this.userRepository.findById(userId ?? '');
 
     if (!user) throw new HttpError(404, 'Account does not exist');
 
@@ -204,15 +210,9 @@ class AuthService {
     await user.save();
   }
 
-  static async blacklistToken(jti: string) {
-    const ttl = 365 * 24 * 60 * 60;
-    await RedisClient.set(`jwt:blacklist:${jti}`, '1', {
-      expiration: {
-        type: 'EX',
-        value: ttl,
-      },
-    });
+  async blacklistToken(jti: string) {
+    await this.authCacheRepository.blacklistToken(jti);
   }
 }
 
-export default AuthService;
+export default new AuthService(UserRepository, AuthCacheRepository);
