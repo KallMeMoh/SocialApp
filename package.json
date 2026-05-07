@@ -11,6 +11,8 @@
     "start": "node --env-file=.env dist/index.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
     "google-auth-library": "^10.6.2",

@@ -38,3 +38,8 @@ export const CLIENT_ID = getRequiredEnvVar('CLIENT_ID');
 // // export const CLIENT_SECRET = getRequiredEnvVar('CLIENT_SECRET');
 
 export const FRONTEND_URL = getRequiredEnvVar('FRONTEND_URL');
+
+export const R2_BUCKET_NAME = getRequiredEnvVar('R2_BUCKET_NAME');
+export const R2_ACCOUNT_ID = getRequiredEnvVar('R2_ACCOUNT_ID');
+export const R2_ACCESS_KEY_ID = getRequiredEnvVar('R2_ACCESS_KEY_ID');
+export const R2_SECRET_ACCESS_KEY = getRequiredEnvVar('R2_SECRET_ACCESS_KEY');
