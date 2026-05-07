@@ -8,3 +8,5 @@ export const forgetPasswordSchema = z.object({
 
   params: z.object({}),
 });
+
+export type ForgotPasswordDTO = z.infer<typeof forgetPasswordSchema>;

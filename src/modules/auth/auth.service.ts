@@ -17,6 +17,11 @@ import { sendPasswordResetEmail } from '../../common/utils/email/send-password-r
 import AuthCacheRepository from '../../database/repository/auth-cache.repository.js';
 import UserRepository from '../../database/repository/user.repository.js';
 import type { User } from '../../common/types/user.type.js';
+import type { SignupDTO } from '../../common/validation/signup.schema.js';
+import type { LoginDTO } from '../../common/validation/login.schema.js';
+import type { ConfirmationDTO } from '../../common/validation/confirmation.schema.js';
+import type { ResetPasswordDTO } from '../../common/validation/reset-password.schema.js';
+import type { ForgotPasswordDTO } from '../../common/validation/forget-password.schema.js';
 
 class AuthService {
   client = new OAuth2Client();
@@ -26,15 +31,7 @@ class AuthService {
     private authCacheRepository: typeof AuthCacheRepository,
   ) {}
 
-  async signup({
-    username,
-    email,
-    password,
-  }: {
-    username: string;
-    email: string;
-    password: string;
-  }) {
+  async signup({ username, email, password }: SignupDTO['body']) {
     const userExists = await this.userRepository.existsByEmail(email);
 
     if (userExists) throw new HttpError(409, 'User already exists');
@@ -58,7 +55,7 @@ class AuthService {
     return user;
   }
 
-  async login({ email, password }: { email: string; password: string }) {
+  async login({ email, password }: LoginDTO['body']) {
     let user = await this.userRepository.findByEmail(email);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
@@ -98,7 +95,7 @@ class AuthService {
     } else return generateTokens(user._id, user.role!);
   }
 
-  async confirmLogin({ otp, token }: { otp: string; token: string }) {
+  async confirmLogin({ otp, token }: ConfirmationDTO['body']) {
     const { sub = undefined } = jwt.verify(
       token,
       PENDING_AUTH_SIGNATURE,
@@ -153,7 +150,7 @@ class AuthService {
     });
   }
 
-  async googleLogin({ idToken }: { idToken: string }) {
+  async googleLogin(idToken: string) {
     const ticket = await this.client.verifyIdToken({
       idToken,
       audience: CLIENT_ID,
@@ -186,7 +183,7 @@ class AuthService {
     return newAccessToken;
   }
 
-  async resetPassword(email: string) {
+  async resetPassword({ email }: ForgotPasswordDTO['body']) {
     const user = await this.userRepository.findByEmail(email);
 
     if (!user) return;
@@ -199,7 +196,10 @@ class AuthService {
     );
   }
 
-  async verifyResetPassword(token: string, new_password: string) {
+  async verifyResetPassword(
+    { token }: ResetPasswordDTO['params'],
+    { new_password }: ResetPasswordDTO['body'],
+  ) {
     console.log(new_password, token);
     const userId = await this.authCacheRepository.getPasswordResetToken(token);
     const user = await this.userRepository.findById(userId ?? '');

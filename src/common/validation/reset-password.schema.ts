@@ -1,9 +1,10 @@
 import { z } from 'zod';
-import { password, ln } from './fields.js';
+import { password, ln, token } from './fields.js';
 
 export const resetPasswordSchema = z.object({
   body: z
     .object({
+      token,
       new_password: password,
       confirm_new_password: password,
     })
@@ -20,3 +21,5 @@ export const resetPasswordSchema = z.object({
     }),
   }),
 });
+
+export type ResetPasswordDTO = z.infer<typeof resetPasswordSchema>;

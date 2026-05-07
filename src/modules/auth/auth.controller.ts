@@ -66,7 +66,7 @@ authRouter.post(
   '/forget-password',
   validate(forgetPasswordSchema),
   async (req, res) => {
-    await AuthService.resetPassword(req.body.email);
+    await AuthService.resetPassword(req.body);
     return res.status(200).json({
       message:
         'You will receive an email shortly if you had registered with us',
@@ -78,10 +78,7 @@ authRouter.post(
   '/reset-password/:token',
   validate(resetPasswordSchema),
   async (req, res) => {
-    await AuthService.verifyResetPassword(
-      req.params['token'] as string,
-      req.body.new_password,
-    );
+    await AuthService.verifyResetPassword(req.params, req.body);
     res.status(200).json({ message: 'Password reset successfully' });
   },
 );

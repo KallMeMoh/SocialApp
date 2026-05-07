@@ -1,18 +1,21 @@
-import type { NextFunction, Response, Request } from 'express';
-import type { ParamsDictionary } from 'express-serve-static-core';
-import type { ZodType } from 'zod';
+import type { NextFunction, RequestHandler } from 'express';
+import { z } from 'zod';
 
-type RequestSchema<BodyT, ParamsT, QueryT> = {
-  body: BodyT;
-  params: ParamsT;
-  query: QueryT;
-};
+type AnyRouteSchema = z.ZodObject<{
+  body: z.ZodTypeAny;
+  query: z.ZodTypeAny;
+  params: z.ZodTypeAny;
+}>;
 
-export const validate =
-  <BodyT, ParamsT extends ParamsDictionary, QueryT>(
-    schema: ZodType<RequestSchema<BodyT, ParamsT, QueryT>>,
-  ) =>
-  async (req: Request, _: Response, next: NextFunction) => {
+type HandlerFor<T extends AnyRouteSchema> = RequestHandler<
+  z.infer<T>['params'],
+  unknown,
+  z.infer<T>['body'],
+  z.infer<T>['query']
+>;
+
+export function validate<T extends AnyRouteSchema>(schema: T): HandlerFor<T> {
+  return async function (req, _res, next: NextFunction) {
     const { body, params } = await schema.parseAsync({
       body: req.body,
       query: req.query,
@@ -24,3 +27,4 @@ export const validate =
 
     next();
   };
+}

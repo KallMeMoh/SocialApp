@@ -18,3 +18,5 @@ export const signupSchema = z.object({
 
   params: z.object({}),
 });
+
+export type SignupDTO = z.infer<typeof signupSchema>;

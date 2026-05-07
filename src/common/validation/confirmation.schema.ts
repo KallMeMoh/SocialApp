@@ -8,3 +8,5 @@ export const confirmationSchema = z.object({
 
   params: z.object({}),
 });
+
+export type ConfirmationDTO = z.infer<typeof confirmationSchema>;
