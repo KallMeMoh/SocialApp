@@ -27,7 +27,7 @@ class R2BucketService {
       Key: key,
       ContentType: contentType,
     });
-    return getSignedUrl(this._client, command, { expiresIn: 60 });
+    return await getSignedUrl(this._client, command, { expiresIn: 60 });
   }
 
   async generateReadUrl(key: string) {
@@ -35,7 +35,9 @@ class R2BucketService {
       Bucket: R2_BUCKET_NAME,
       Key: key,
     });
-    return getSignedUrl(this._client, command, { expiresIn: 60 * 60 * 6 });
+    return await getSignedUrl(this._client, command, {
+      expiresIn: 60 * 60 * 6,
+    });
   }
 }
 
