@@ -2,13 +2,13 @@ import jwt, { type JwtPayload } from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 import { HttpError } from '../common/errors/http-error.js';
-import type { UserRole } from '../common/types/user.type.js';
-import { TokenType } from '../common/types/auth.types.js';
+import { isTokenType, TokenType } from '../common/types/auth.types.js';
 import { getSignature } from '../common/utils/auth/token-signature.js';
 import { RedisClient } from '../database/redis.connection.js';
+import { isUserRole } from '../common/types/user.type.js';
 
 export const authenticate =
-  (tokenType = TokenType.Access) =>
+  (requiredTokenType = TokenType.Access) =>
   async (req: Request, _: Response, next: NextFunction) => {
     const authHeader = req.headers?.authorization;
     if (!authHeader) throw new HttpError(401, `Missing authorization header`);
@@ -20,14 +20,25 @@ export const authenticate =
     if (!token) throw new HttpError(401, 'Missing Token');
 
     try {
-      const { aud } = (jwt.decode(token) ?? {}) as JwtPayload;
-      const [role, type] = (Array.isArray(aud) ? aud : []) as [
-        UserRole,
-        TokenType,
+      const decoded = jwt.decode(token);
+      const { aud } = (
+        typeof decoded === 'object' && decoded !== null ? decoded : {}
+      ) as JwtPayload;
+      const [role, tokenType] = (Array.isArray(aud) ? aud : []) as [
+        string?,
+        string?,
       ];
 
-      if (!role || !type || type !== tokenType)
+      if (!role || !tokenType)
         throw new HttpError(401, 'Invalid or malformed token');
+
+      if (
+        !isUserRole(role) ||
+        !isTokenType(tokenType) ||
+        tokenType !== requiredTokenType
+      ) {
+        throw new HttpError(401, 'Invalid or malformed token');
+      }
 
       const signature = getSignature(role)[`${tokenType}Signature`];
       if (!signature) throw new HttpError(401, 'Invalid or malformed token');

@@ -7,7 +7,7 @@ class UserService {
 
   async getAvatarUploadUrl({ fileType }: AvatarUploadDTO['body']) {
     const key = `uploads/avatars/${Date.now()}_${randomUUID()}.${fileType}`;
-    this._r2bucketService.generateUploadUrl(key, fileType);
+    return await this._r2bucketService.generateUploadUrl(key, fileType);
   }
 }
 

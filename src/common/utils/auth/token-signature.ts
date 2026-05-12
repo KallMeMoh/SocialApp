@@ -10,8 +10,15 @@ import { UserRole } from '../../types/user.type.js';
 export const getSignature = (userRole = UserRole.User) => {
   let accessSignature = '';
   let refreshSignature = '';
+
+  console.log(typeof userRole);
+  console.log(typeof UserRole.User);
+
+  console.log(userRole == UserRole.User);
+
   switch (userRole) {
     case UserRole.User:
+      console.log('works');
       accessSignature = USER_ACCESS_SIGNATURE;
       refreshSignature = USER_REFRESH_SIGNATURE;
       break;

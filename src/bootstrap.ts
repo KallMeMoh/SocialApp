@@ -5,6 +5,7 @@ import { PORT } from './config/index.js';
 import { HttpError } from './common/errors/http-error.js';
 import { connectMongo } from './database/mongo.connection.js';
 import { connectRedis } from './database/redis.connection.js';
+import { userRouter } from './modules/user/user.controller.js';
 
 export async function bootstrap() {
   const app = express();
@@ -14,6 +15,7 @@ export async function bootstrap() {
   app.use(express.json());
 
   app.use('/auth', authRouter);
+  app.use('/users', userRouter);
 
   app.all('{/*endpoints}', (_, __) => {
     throw new HttpError(404, 'Endpoint not found');

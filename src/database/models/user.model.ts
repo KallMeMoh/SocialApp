@@ -33,13 +33,13 @@ const userSchema = new Schema<User>(
     },
     // system
     provider: {
-      type: Number,
-      enum: Object.keys(AuthProvider),
+      type: String,
+      enum: Object.values(AuthProvider),
       required: true,
     },
     role: {
-      type: Number,
-      enum: Object.keys(UserRole),
+      type: String,
+      enum: Object.values(UserRole),
       default: UserRole.User,
     },
     verificationExpiry: {

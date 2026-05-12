@@ -17,6 +17,12 @@ export interface User {
 }
 
 export enum UserRole {
-  User,
-  Admin,
+  User = 'user',
+  Admin = 'admin',
+}
+
+export function isUserRole(value: any): value is UserRole {
+  return (
+    Object.values(UserRole).findIndex((userRole) => userRole === value) !== -1
+  );
 }
