@@ -1,8 +1,8 @@
 import { model, Schema } from 'mongoose';
-import { UserRole, type User } from '../../common/types/user.type.js';
-import { AuthProvider } from '../../common/types/auth.types.js';
+import { UserRoleEnum, type IUser } from '../../common/types/user.type.js';
+import { AuthProviderEnum } from '../../common/types/auth.type.js';
 
-const userSchema = new Schema<User>(
+const userSchema = new Schema<IUser>(
   {
     username: {
       type: String,
@@ -28,19 +28,19 @@ const userSchema = new Schema<User>(
     hashed_password: {
       type: String,
       required: function (): boolean {
-        return this.provider === AuthProvider.System;
+        return this.provider === AuthProviderEnum.System;
       },
     },
     // system
     provider: {
       type: String,
-      enum: Object.values(AuthProvider),
+      enum: Object.values(AuthProviderEnum),
       required: true,
     },
     role: {
       type: String,
-      enum: Object.values(UserRole),
-      default: UserRole.User,
+      enum: Object.values(UserRoleEnum),
+      default: UserRoleEnum.User,
     },
     verificationExpiry: {
       type: Date,

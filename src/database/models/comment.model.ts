@@ -1,0 +1,45 @@
+import { model, Schema } from 'mongoose';
+import { ReactionEnum } from '../../common/types/reaction.type.js';
+import type { IComment } from '../../common/types/comment.type.js';
+
+const commentSchema = new Schema<IComment>(
+  {
+    authorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    text: { type: String, maxlength: 280, required: true },
+
+    postId: { type: Schema.Types.ObjectId, ref: 'Post', default: null },
+    parentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Comment',
+      default: null,
+    },
+
+    rootPostId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post',
+      default: null,
+    },
+
+    stats: {
+      reactionCounts: Object.fromEntries(
+        Object.values(ReactionEnum).map((e) => [
+          e,
+          { type: Number, default: 0 },
+        ]),
+      ),
+      replyCount: { type: Number, default: 0 },
+    },
+
+    isDeleted: { type: Date, default: null },
+  },
+  { timestamps: true },
+);
+
+commentSchema.index({ rootPost: 1, createdAt: -1 });
+commentSchema.index({ parentId: 1, createdAt: -1 });
+
+export const CommentModel = model('Comment', commentSchema);

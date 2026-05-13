@@ -5,7 +5,7 @@ import { validate } from '../../middlewares/validation.js';
 import { signupSchema } from '../../common/validation/signup.schema.js';
 import { loginSchema } from '../../common/validation/login.schema.js';
 import { confirmationSchema } from '../../common/validation/confirmation.schema.js';
-import { TokenType } from '../../common/types/auth.types.js';
+import { TokenTypeEnum } from '../../common/types/auth.type.js';
 import { authenticate } from '../../middlewares/authentication.js';
 import { resetPasswordSchema } from '../../common/validation/reset-password.schema.js';
 import { forgetPasswordSchema } from '../../common/validation/forget-password.schema.js';
@@ -50,7 +50,7 @@ authRouter.post('/oauth/login/google', async (req, res) => {
 
 authRouter.post(
   '/token/refresh',
-  authenticate(TokenType.Refresh),
+  authenticate(TokenTypeEnum.Refresh),
   async (req, res) => {
     const accessToken = await AuthService.rotateToken(
       req.userId!,

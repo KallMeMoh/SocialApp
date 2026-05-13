@@ -10,13 +10,16 @@ import {
   SALT_ROUNDS,
 } from '../../config/index.js';
 import { HttpError } from '../../common/errors/http-error.js';
-import { AuthProvider, TokenType } from '../../common/types/auth.types.js';
+import {
+  AuthProviderEnum,
+  TokenTypeEnum,
+} from '../../common/types/auth.type.js';
 import { generateTokens } from '../../common/utils/auth/generate-token.js';
 import { sendOTPEmail } from '../../common/utils/email/send-otp-email.js';
 import { sendPasswordResetEmail } from '../../common/utils/email/send-password-reset-email.js';
 import AuthCacheRepository from '../../database/repository/auth-cache.repository.js';
 import UserRepository from '../../database/repository/user.repository.js';
-import type { User } from '../../common/types/user.type.js';
+import type { IUser } from '../../common/types/user.type.js';
 import type { SignupDTO } from '../../common/validation/signup.schema.js';
 import type { LoginDTO } from '../../common/validation/login.schema.js';
 import type { ConfirmationDTO } from '../../common/validation/confirmation.schema.js';
@@ -36,11 +39,11 @@ class AuthService {
 
     if (userExists) throw new HttpError(409, 'User already exists');
 
-    const data: User = {
+    const data: IUser = {
       username,
       email,
       hashed_password: await hash(password, SALT_ROUNDS),
-      provider: AuthProvider.System,
+      provider: AuthProviderEnum.System,
     };
 
     const user = await this.userRepository.create(data);
@@ -77,7 +80,7 @@ class AuthService {
 
     if (user.has2FA) {
       const token = jwt.sign({ sub: user._id }, PENDING_AUTH_SIGNATURE, {
-        audience: [`${TokenType.PendingAuth}`],
+        audience: [`${TokenTypeEnum.PendingAuth}`],
         expiresIn: '10m',
       });
 
@@ -146,7 +149,7 @@ class AuthService {
       email: email!,
       verified: email_verified,
       avatar: picture,
-      provider: AuthProvider.Google,
+      provider: AuthProviderEnum.Google,
     });
   }
 
@@ -161,7 +164,7 @@ class AuthService {
 
     const user = await this.userRepository.findByEmailAndProvider(
       payload.email ?? '',
-      AuthProvider.Google,
+      AuthProviderEnum.Google,
     );
 
     if (!user) throw new HttpError(401, 'Invalid credentials');

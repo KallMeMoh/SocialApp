@@ -1,6 +1,6 @@
-import type { AuthProvider } from './auth.types.js';
+import type { AuthProviderEnum } from './auth.type.js';
 
-export interface User {
+export interface IUser {
   _id?: string;
   username: string;
   email: string;
@@ -9,20 +9,21 @@ export interface User {
   has2FA?: boolean;
   hashed_password?: string;
   // system
-  provider: AuthProvider;
-  role?: UserRole;
+  provider: AuthProviderEnum;
+  role?: UserRoleEnum;
   verificationExpiry?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-export enum UserRole {
+export enum UserRoleEnum {
   User = 'user',
   Admin = 'admin',
 }
 
-export function isUserRole(value: any): value is UserRole {
+export function isUserRoleEnum(value: any): value is UserRoleEnum {
   return (
-    Object.values(UserRole).findIndex((userRole) => userRole === value) !== -1
+    Object.values(UserRoleEnum).findIndex((userRole) => userRole === value) !==
+    -1
   );
 }

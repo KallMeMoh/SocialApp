@@ -2,13 +2,13 @@ import jwt, { type JwtPayload } from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
 import { HttpError } from '../common/errors/http-error.js';
-import { isTokenType, TokenType } from '../common/types/auth.types.js';
+import { isTokenTypeEnum, TokenTypeEnum } from '../common/types/auth.type.js';
 import { getSignature } from '../common/utils/auth/token-signature.js';
 import { RedisClient } from '../database/redis.connection.js';
-import { isUserRole } from '../common/types/user.type.js';
+import { isUserRoleEnum } from '../common/types/user.type.js';
 
 export const authenticate =
-  (requiredTokenType = TokenType.Access) =>
+  (requiredTokenType = TokenTypeEnum.Access) =>
   async (req: Request, _: Response, next: NextFunction) => {
     const authHeader = req.headers?.authorization;
     if (!authHeader) throw new HttpError(401, `Missing authorization header`);
@@ -33,8 +33,8 @@ export const authenticate =
         throw new HttpError(401, 'Invalid or malformed token');
 
       if (
-        !isUserRole(role) ||
-        !isTokenType(tokenType) ||
+        !isUserRoleEnum(role) ||
+        !isTokenTypeEnum(tokenType) ||
         tokenType !== requiredTokenType
       ) {
         throw new HttpError(401, 'Invalid or malformed token');

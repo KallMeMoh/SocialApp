@@ -1,6 +1,6 @@
 import type { Model } from 'mongoose';
 import type { User } from '../../common/types/user.type.js';
-import type { AuthProvider } from '../../common/types/auth.types.js';
+import type { AuthProvider } from '../../common/types/auth.type.js';
 import { UserModel } from '../models/user.model.js';
 
 class UserRepository {

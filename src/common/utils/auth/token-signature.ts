@@ -5,24 +5,18 @@ import {
   USER_ACCESS_SIGNATURE,
   USER_REFRESH_SIGNATURE,
 } from '../../../config/index.js';
-import { UserRole } from '../../types/user.type.js';
+import { UserRoleEnum } from '../../types/user.type.js';
 
-export const getSignature = (userRole = UserRole.User) => {
+export const getSignature = (userRole = UserRoleEnum.User) => {
   let accessSignature = '';
   let refreshSignature = '';
 
-  console.log(typeof userRole);
-  console.log(typeof UserRole.User);
-
-  console.log(userRole == UserRole.User);
-
   switch (userRole) {
-    case UserRole.User:
-      console.log('works');
+    case UserRoleEnum.User:
       accessSignature = USER_ACCESS_SIGNATURE;
       refreshSignature = USER_REFRESH_SIGNATURE;
       break;
-    case UserRole.Admin:
+    case UserRoleEnum.Admin:
       accessSignature = ADMIN_ACCESS_SIGNATURE;
       refreshSignature = ADMIN_REFRESH_SIGNATURE;
       break;
