@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import UserService from './user.service.js';
-import { authenticate } from '../../middlewares/authentication.js';
 import { avatarUploadSchema } from '../../common/validation/avatar-upload.schema.js';
 import { validate } from '../../middlewares/validation.js';
 import { UserRoleEnum } from '../../common/types/user.type.js';
@@ -62,14 +61,13 @@ userRouter.post(
 userRouter.get(
   '/avatar-upload-url',
   validate(avatarUploadSchema),
-  authenticate(),
   async (req, res) => {
     const url = await UserService.getAvatarUploadUrl(req.body);
     return res.status(200).json({ url });
   },
 );
 
-userRouter.delete('/', authenticate(), async (req, res) => {
+userRouter.delete('/', async (req, res) => {
   await UserService.deleteAccount({ userId: req.userId ?? '' });
   return res.status(200).json({ message: 'Account deleted successfully' });
 });
@@ -78,7 +76,6 @@ userRouter.delete(
   '/:userId',
   authorize(UserRoleEnum.Admin),
   validate(paramIdSchema),
-  authenticate(),
   async (req, res) => {
     await UserService.deleteAccount(req.params);
     return res.status(200).json({ message: 'Account deleted successfully' });

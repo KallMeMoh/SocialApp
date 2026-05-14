@@ -10,6 +10,7 @@ import { postRouter } from './modules/post/post.controller.js';
 import { commentRouter } from './modules/comment/comment.controller.js';
 import { storyRouter } from './modules/story/story.controller.js';
 import { reactionRouter } from './modules/reaction/reaction.controller.js';
+import { authenticate } from './middlewares/authentication.js';
 
 export async function bootstrap() {
   const app = express();
@@ -19,11 +20,11 @@ export async function bootstrap() {
   app.use(express.json());
 
   app.use('/auth', authRouter);
-  app.use('/users', userRouter);
-  app.use('/posts', postRouter);
-  app.use('/comments', commentRouter);
-  app.use('/stories', storyRouter);
-  app.use('/reactions', reactionRouter);
+  app.use('/users', authenticate(), userRouter);
+  app.use('/posts', authenticate(), postRouter);
+  app.use('/comments', authenticate(), commentRouter);
+  app.use('/stories', authenticate(), storyRouter);
+  app.use('/reactions', authenticate(), reactionRouter);
 
   app.all('{/*endpoints}', (_, __) => {
     throw new HttpError(404, 'Endpoint not found');
