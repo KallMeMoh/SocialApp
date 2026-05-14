@@ -12,7 +12,7 @@ import AuthRepository from '../auth/auth.repository.js';
 import { transporter } from '../../common/utils/email/transporter.js';
 import { randomInt } from 'node:crypto';
 import { otpTemplate } from '../../common/utils/email/templates/otp.js';
-import type { ParamIDDTO } from '../../common/validation/param-id.schema.js';
+import type { UserIdDTO } from '../../common/validation/user-id.schema.js';
 
 class UserService {
   constructor(
@@ -23,10 +23,10 @@ class UserService {
 
   async getUserProfile({
     userId,
-  }: ParamIDDTO['params']): Promise<
-    Omit<IUser, '_id' | 'provider' | 'updatedAt' | '__v' | 'hashed_password'>
+  }: UserIdDTO['params']): Promise<
+    Omit<IUser, '_id' | 'provider' | 'updatedAt' | '__v' | 'password'>
   > {
-    const user = await this.userRepository.findById(userId, '-hashed_password');
+    const user = await this.userRepository.findById(userId, '-password');
     if (!user) throw new HttpError(404, "User doesn't exist");
 
     await this.userRepository.updateById(userId, { $inc: { visits: 1 } });
@@ -175,7 +175,7 @@ class UserService {
     ]);
   }
 
-  async deleteAccount({ userId }: ParamIDDTO['params']): Promise<void> {
+  async deleteAccount({ userId }: UserIdDTO['params']): Promise<void> {
     const { deletedCount } = await this.userRepository.deleteById(userId);
     if (deletedCount < 1) throw new HttpError(404, 'Account does not exist');
   }
