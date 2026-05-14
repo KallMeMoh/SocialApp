@@ -11,6 +11,8 @@ const reactionSchema = new Schema<IReaction>(
 
     postId: { type: Schema.Types.ObjectId, ref: 'Post', default: null },
     commentId: { type: Schema.Types.ObjectId, ref: 'Comment', default: null },
+
+    isDeleted: { type: Date, default: null },
   },
   { timestamps: true },
 );

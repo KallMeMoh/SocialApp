@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -38,6 +39,14 @@ class R2BucketService {
     return await getSignedUrl(this._client, command, {
       expiresIn: 60 * 60 * 6,
     });
+  }
+
+  async deleteFile(key: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+    });
+    await this._client.send(command);
   }
 }
 

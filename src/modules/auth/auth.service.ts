@@ -1,7 +1,7 @@
 import { compare, hash } from 'bcrypt';
 import jwt, { type JwtPayload } from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 
 import {
   CLIENT_ID,
@@ -15,11 +15,12 @@ import {
   TokenTypeEnum,
 } from '../../common/types/auth.type.js';
 import { generateTokens } from '../../common/utils/auth/generate-token.js';
-import { sendOTPEmail } from '../../common/utils/email/send-otp-email.js';
 import { sendPasswordResetEmail } from '../../common/utils/email/send-password-reset-email.js';
-import AuthCacheRepository from '../../database/repository/auth-cache.repository.js';
-import UserRepository from '../../database/repository/user.repository.js';
-import type { IUser } from '../../common/types/user.type.js';
+import { transporter } from '../../common/utils/email/transporter.js';
+import { otpTemplate } from '../../common/utils/email/templates/otp.js';
+import AuthRepository from './auth.repository.js';
+import UserRepository from '../user/user.repository.js';
+import { UserRoleEnum } from '../../common/types/user.type.js';
 import type { SignupDTO } from '../../common/validation/signup.schema.js';
 import type { LoginDTO } from '../../common/validation/login.schema.js';
 import type { ConfirmationDTO } from '../../common/validation/confirmation.schema.js';
@@ -31,7 +32,7 @@ class AuthService {
 
   constructor(
     private userRepository: typeof UserRepository,
-    private authCacheRepository: typeof AuthCacheRepository,
+    private authRepository: typeof AuthRepository,
   ) {}
 
   async signup({ username, email, password }: SignupDTO['body']) {
@@ -39,42 +40,54 @@ class AuthService {
 
     if (userExists) throw new HttpError(409, 'User already exists');
 
-    const data: IUser = {
+    const user = await this.userRepository.create({
       username,
       email,
-      hashed_password: await hash(password, SALT_ROUNDS),
+      avatar: null,
+      verified: false,
+      has2FA: false,
+      password,
+
       provider: AuthProviderEnum.System,
-    };
+      role: UserRoleEnum.User,
+      verificationExpiry: new Date(),
+      isDeleted: null,
+    });
 
-    const user = await this.userRepository.create(data);
-
-    sendOTPEmail(
-      `otp:signup:${user._id}`,
-      user,
-      'Verify your SocialApp account',
-      'complete your registration',
-    ).catch((err: unknown) => console.error('Failed to email OTP: ', err));
+    const code = randomInt(100_000, 999_999).toString();
+    await this.userRepository.setVerificationCode(user._id.toString(), code);
+    transporter
+      .sendMail({
+        from: 'onboarding@resend.dev',
+        to: user.email,
+        subject: 'Verify your SocialApp account',
+        html: otpTemplate(code, 'complete your registration'),
+      })
+      .catch((err: unknown) => console.error('Failed to email OTP: ', err));
 
     return user;
   }
 
   async login({ email, password }: LoginDTO['body']) {
-    let user = await this.userRepository.findByEmail(email);
+    const user = await this.userRepository.findByEmail(email);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
 
-    const loginAttempts = await this.authCacheRepository.getLoginAttempts(
-      user._id,
+    if (user.provider === AuthProviderEnum.Google)
+      throw new HttpError(
+        400,
+        'This account uses Google sign-in. Please continue with Google.',
+      );
+
+    const loginAttempts = await this.authRepository.getLoginAttempts(
+      user._id.toString(),
     );
     if (loginAttempts && parseInt(loginAttempts) > 5)
       throw new HttpError(401, 'Account temporarily banned, try again later');
 
-    const matchedPassword = await compare(password, user.hashed_password!);
+    const matchedPassword = await compare(password, user.password!);
     if (!matchedPassword) {
-      const loginCounter =
-        await this.authCacheRepository.incrementLoginAttempts(user._id);
-      if (loginCounter === 1)
-        this.authCacheRepository.expireLoginAttempts(user._id);
+      await this.authRepository.incrementLoginAttempts(user._id.toString());
       throw new HttpError(401, 'Invalid credentials');
     }
 
@@ -84,18 +97,19 @@ class AuthService {
         expiresIn: '10m',
       });
 
-      await sendOTPEmail(
-        `auth:login-2fa:${user._id}`,
-        user,
-        'Your SocialApp login confirmation code',
-        'confirm your login attempt',
-      );
+      const code = randomInt(100_000, 999_999).toString();
+      await this.authRepository.store2FACode(user._id.toString(), code);
+      await transporter.sendMail({
+        from: 'onboarding@resend.dev',
+        to: user.email,
+        subject: 'Your SocialApp login confirmation code',
+        html: otpTemplate(code, 'confirm your login attempt'),
+      });
 
-      return {
-        requires2FA: true,
-        token,
-      };
-    } else return generateTokens(user._id, user.role!);
+      return { requires2FA: true, token } as const;
+    }
+
+    return generateTokens(user._id, user.role!);
   }
 
   async confirmLogin({ otp, token }: ConfirmationDTO['body']) {
@@ -106,24 +120,20 @@ class AuthService {
 
     const [user, code] = await Promise.all([
       this.userRepository.findById(sub ?? ''),
-      this.authCacheRepository.get2FACode(sub ?? ''),
+      this.authRepository.get2FACode(sub ?? ''),
     ]);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
     if (!code) throw new HttpError(404, 'OTP Expired, please login again');
 
-    const loginAttempts = await this.authCacheRepository.getLoginAttempts(
-      user._id,
+    const loginAttempts = await this.authRepository.getLoginAttempts(
+      user._id.toString(),
     );
-
     if (loginAttempts && parseInt(loginAttempts) > 5)
       throw new HttpError(401, 'Account temporarily banned, try again later');
 
     if (otp !== code) {
-      const loginCounter =
-        await this.authCacheRepository.incrementLoginAttempts(user._id);
-      if (loginCounter === 1)
-        this.authCacheRepository.expireLoginAttempts(user._id);
+      await this.authRepository.incrementLoginAttempts(user._id.toString());
       throw new HttpError(401, 'Invalid credentials');
     }
 
@@ -141,15 +151,18 @@ class AuthService {
     const { given_name, email, picture, email_verified } = payload;
 
     const user = await this.userRepository.findByEmail(email ?? '');
-
     if (user) throw new HttpError(409, 'Account already exists');
 
     await this.userRepository.create({
       username: given_name!,
       email: email!,
-      verified: email_verified,
-      avatar: picture,
+      verified: email_verified ?? false,
+      avatar: picture ?? null,
       provider: AuthProviderEnum.Google,
+      has2FA: false,
+      role: UserRoleEnum.User,
+      verificationExpiry: null,
+      isDeleted: null,
     });
   }
 
@@ -168,6 +181,12 @@ class AuthService {
     );
 
     if (!user) throw new HttpError(401, 'Invalid credentials');
+
+    if (user.provider !== AuthProviderEnum.Google)
+      throw new HttpError(
+        400,
+        'This account uses password sign-in. Please log in with your password.',
+      );
 
     return generateTokens(user._id, user.role!);
   }
@@ -192,7 +211,7 @@ class AuthService {
     if (!user) return;
 
     const token = randomBytes(32).toString('hex');
-    await this.authCacheRepository.setPasswordResetToken(token, user._id);
+    await this.authRepository.setPasswordResetToken(token, user._id.toString());
     await sendPasswordResetEmail(
       user.email,
       `${FRONTEND_URL}/reset-password?token=${token}`,
@@ -203,19 +222,16 @@ class AuthService {
     { token }: ResetPasswordDTO['params'],
     { new_password }: ResetPasswordDTO['body'],
   ) {
-    console.log(new_password, token);
-    const userId = await this.authCacheRepository.getPasswordResetToken(token);
-    const user = await this.userRepository.findById(userId ?? '');
+    const userId = await this.authRepository.getPasswordResetToken(token);
+    if (!userId) throw new HttpError(404, 'Invalid or expired reset token');
 
-    if (!user) throw new HttpError(404, 'Account does not exist');
-
-    user.hashed_password = await hash(new_password, SALT_ROUNDS);
-    await user.save();
+    const hashedPassword = await hash(new_password, SALT_ROUNDS);
+    await this.userRepository.updatePassword(userId, hashedPassword);
   }
 
   async blacklistToken(jti: string) {
-    await this.authCacheRepository.blacklistToken(jti);
+    await this.authRepository.blacklistToken(jti);
   }
 }
 
-export default new AuthService(UserRepository, AuthCacheRepository);
+export default new AuthService(UserRepository, AuthRepository);

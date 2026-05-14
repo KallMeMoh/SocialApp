@@ -1,6 +1,8 @@
 import { model, Schema } from 'mongoose';
 import { UserRoleEnum, type IUser } from '../../common/types/user.type.js';
 import { AuthProviderEnum } from '../../common/types/auth.type.js';
+import { hash } from 'bcrypt';
+import { SALT_ROUNDS } from '../../config/index.js';
 
 const userSchema = new Schema<IUser>(
   {
@@ -25,7 +27,7 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
-    hashed_password: {
+    password: {
       type: String,
       required: function (): boolean {
         return this.provider === AuthProviderEnum.System;
@@ -47,10 +49,19 @@ const userSchema = new Schema<IUser>(
       default: () => new Date(),
       index: { expireAfterSeconds: 86400 },
     },
+    isDeleted: { type: Date, default: null },
   },
   {
     timestamps: true,
   },
 );
 
-export const UserModel = model('User', userSchema);
+userSchema.pre('save', async function (this) {
+  if (this.provider === AuthProviderEnum.System) {
+    if (this.isModified('password')) {
+      this.password = await hash(this.password, SALT_ROUNDS);
+    }
+  }
+});
+
+export const UserModel = model<IUser>('User', userSchema);

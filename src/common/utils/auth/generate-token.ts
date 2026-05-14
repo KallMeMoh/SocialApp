@@ -3,9 +3,10 @@ import { randomUUID } from 'crypto';
 import { getSignature } from './token-signature.js';
 import { TokenTypeEnum } from '../../types/auth.type.js';
 import type { UserRoleEnum } from '../../types/user.type.js';
+import type { Types } from 'mongoose';
 
 export const generateTokens = (
-  userId: string,
+  userId: Types.ObjectId,
   userRole: UserRoleEnum,
   jti?: string,
 ) => {
@@ -26,5 +27,5 @@ export const generateTokens = (
     jwtid,
   });
 
-  return { accessToken, refreshToken, requires2FA: false };
+  return { accessToken, refreshToken, requires2FA: false } as const;
 };

@@ -7,7 +7,6 @@ export enum StoryTypeEnum {
 }
 
 export interface IStory {
-  _id: Types.ObjectId;
   authorId: Types.ObjectId;
   type: StoryTypeEnum;
   url?: string;
@@ -17,6 +16,4 @@ export interface IStory {
     viewCount: number;
   };
   isDeleted?: Date;
-  createdAt: Date;
-  updatedAt: Date;
 }

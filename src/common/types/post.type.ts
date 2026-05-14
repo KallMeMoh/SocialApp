@@ -9,7 +9,6 @@ export interface Media {
 }
 
 export interface IPost {
-  _id: Types.ObjectId;
   authorId: Types.ObjectId;
   content: {
     text: String;
@@ -24,6 +23,4 @@ export interface IPost {
   hashtags: String[];
   mentions: String[];
   isDeleted?: Date;
-  createdAt: Date;
-  updatedAt: Date;
 }

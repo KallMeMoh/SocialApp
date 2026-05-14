@@ -36,7 +36,7 @@ export const password = z
 
 export const id = z
   .string()
-  .regex(/^[a-fA-F0-9]{24}$/, { error: 'Invalid ID' });
+  .regex(/^[a-fA-F0-9]{24}$/, { error: 'Invalid user Id' });
 
 export const otp = z
   .string()

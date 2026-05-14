@@ -1,12 +1,12 @@
 import { randomInt } from 'node:crypto';
 import { otpTemplate } from './templates/otp.js';
 import { transporter } from './transporter.js';
-import type { User } from '../../types/user.type.js';
+import type { IUser } from '../../types/user.type.js';
 import { RedisClient } from '../../../database/redis.connection.js';
 
 export const sendOTPEmail = async (
   key: string,
-  user: User,
+  user: IUser,
   subject: string,
   reason: string,
 ) => {

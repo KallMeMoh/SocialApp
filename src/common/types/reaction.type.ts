@@ -10,7 +10,6 @@ export enum ReactionEnum {
 }
 
 export interface IReaction {
-  _id: Types.ObjectId;
   userId: Types.ObjectId;
   emoji: ReactionEnum;
 
@@ -18,6 +17,5 @@ export interface IReaction {
   postId: Types.ObjectId | null;
   commentId: Types.ObjectId | null;
 
-  createdAt: Date;
-  updatedAt: Date;
+  isDeleted?: Date;
 }
