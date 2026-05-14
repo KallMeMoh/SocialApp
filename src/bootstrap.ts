@@ -6,6 +6,10 @@ import { HttpError } from './common/errors/http-error.js';
 import { connectMongo } from './database/mongo.connection.js';
 import { connectRedis } from './database/redis.connection.js';
 import { userRouter } from './modules/user/user.controller.js';
+import { postRouter } from './modules/post/post.controller.js';
+import { commentRouter } from './modules/comment/comment.controller.js';
+import { storyRouter } from './modules/story/story.controller.js';
+import { reactionRouter } from './modules/reaction/reaction.controller.js';
 
 export async function bootstrap() {
   const app = express();
@@ -16,6 +20,10 @@ export async function bootstrap() {
 
   app.use('/auth', authRouter);
   app.use('/users', userRouter);
+  app.use('/posts', postRouter);
+  app.use('/comments', commentRouter);
+  app.use('/stories', storyRouter);
+  app.use('/reactions', reactionRouter);
 
   app.all('{/*endpoints}', (_, __) => {
     throw new HttpError(404, 'Endpoint not found');
