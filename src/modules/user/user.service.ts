@@ -1,18 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import r2bucketService from '../../common/services/r2bucket.service.js';
-import type { AvatarUploadDTO } from '../../common/validation/avatar-upload.schema.js';
-import type { Types } from 'mongoose';
 import UserRepository from './user.repository.js';
 import { HttpError } from '../../common/errors/http-error.js';
 import { compare, hash } from 'bcrypt';
 import { SALT_ROUNDS } from '../../config/index.js';
-import type { IUser } from '../../common/types/user.type.js';
 import { AuthProviderEnum } from '../../common/types/auth.type.js';
 import AuthRepository from '../auth/auth.repository.js';
 import { transporter } from '../../common/utils/email/transporter.js';
 import { randomInt } from 'node:crypto';
 import { otpTemplate } from '../../common/utils/email/templates/otp.js';
-import type { UserIdDTO } from '../../common/validation/user-id.schema.js';
+import type { Types } from 'mongoose';
+import type { AvatarUploadDTO, UserIdDTO } from './user.dto.js';
 
 class UserService {
   constructor(
@@ -21,29 +19,22 @@ class UserService {
     private readonly _r2bucketService: typeof r2bucketService,
   ) {}
 
-  async getUserProfile({
-    userId,
-  }: UserIdDTO['params']): Promise<
-    Omit<IUser, '_id' | 'provider' | 'updatedAt' | '__v' | 'password'>
-  > {
-    const user = await this.userRepository.findById(userId, '-password');
+  async getUserProfile({ userId }: UserIdDTO['params']) {
+    const user = await this.userRepository.findById(
+      userId,
+      '-password -provider -updatedAt -__v',
+    );
     if (!user) throw new HttpError(404, "User doesn't exist");
-
-    await this.userRepository.updateById(userId, { $inc: { visits: 1 } });
-
-    const { _id, provider, password, updatedAt, __v, ...userObj } = user;
-
-    return userObj;
+    return user;
   }
 
-  async request2FAActivation(userId: Types.ObjectId | string): Promise<void> {
+  async request2FAActivation(userId: Types.ObjectId) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new HttpError(404, 'Account does not exist');
     if (user.verified) throw new HttpError(409, 'Account already verified');
 
-    const codeExists = await this.userRepository.twoFAActivationCodeExists(
-      String(userId),
-    );
+    const codeExists =
+      await this.userRepository.twoFAActivationCodeExists(userId);
     if (codeExists)
       throw new HttpError(
         429,
@@ -51,7 +42,7 @@ class UserService {
       );
 
     const code = String(randomInt(100000, 999999));
-    await this.userRepository.set2FAActivationCode(String(userId), code);
+    await this.userRepository.set2FAActivationCode(userId, code);
 
     await transporter.sendMail({
       to: user.email,
@@ -60,13 +51,10 @@ class UserService {
     });
   }
 
-  async activate2FA(
-    userId: Types.ObjectId | string,
-    code: string,
-  ): Promise<void> {
+  async activate2FA(userId: Types.ObjectId, code: string) {
     const [user, otp] = await Promise.all([
       this.userRepository.findById(userId),
-      this.userRepository.get2FAActivationCode(String(userId)),
+      this.userRepository.get2FAActivationCode(userId),
     ]);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
@@ -77,17 +65,15 @@ class UserService {
       throw new HttpError(401, 'Invalid Code, please try again later');
 
     await Promise.all([
-      this.userRepository.del2FAActivationCode(String(userId)),
+      this.userRepository.del2FAActivationCode(userId),
       this.userRepository.updateById(userId, { $set: { has2FA: true } }),
     ]);
   }
 
-  async requestVerificationCode(
-    userId: Types.ObjectId | string,
-  ): Promise<void> {
+  async requestVerificationCode(userId: Types.ObjectId) {
     const [user, otpExists] = await Promise.all([
       this.userRepository.findById(userId),
-      this.userRepository.verificationCodeExists(String(userId)),
+      this.userRepository.verificationCodeExists(userId),
     ]);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
@@ -99,7 +85,7 @@ class UserService {
       );
 
     const code = String(randomInt(100000, 999999));
-    await this.userRepository.setVerificationCode(String(userId), code);
+    await this.userRepository.setVerificationCode(userId, code);
 
     await transporter.sendMail({
       to: user.email,
@@ -108,13 +94,10 @@ class UserService {
     });
   }
 
-  async verifyUserAccount(
-    userId: Types.ObjectId | string,
-    code: string,
-  ): Promise<void> {
+  async verifyUserAccount(userId: Types.ObjectId, code: string) {
     const [user, otp] = await Promise.all([
       this.userRepository.findById(userId),
-      this.userRepository.getVerificationCode(String(userId)),
+      this.userRepository.getVerificationCode(userId),
     ]);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
@@ -125,7 +108,7 @@ class UserService {
       throw new HttpError(401, 'Invalid code, please try again');
 
     await Promise.all([
-      this.userRepository.delVerificationCode(String(userId)),
+      this.userRepository.delVerificationCode(userId),
       this.userRepository.updateById(userId, {
         $set: { verified: true },
         $unset: { verificationExpiry: 1 },
@@ -134,13 +117,13 @@ class UserService {
   }
 
   async updateUserPassword(
-    userId: Types.ObjectId | string,
+    userId: Types.ObjectId,
     jti: string,
     {
       old_password,
       new_password,
     }: { old_password: string; new_password: string },
-  ): Promise<void> {
+  ) {
     const user = await this.userRepository.findById(userId);
     if (!user) throw new HttpError(404, 'Account does not exist');
 
@@ -152,19 +135,17 @@ class UserService {
     const newHashedPassword = await hash(new_password, SALT_ROUNDS);
 
     await Promise.all([
-      this.userRepository.updatePassword(String(userId), newHashedPassword),
+      this.userRepository.updatePassword(userId, newHashedPassword),
       this.authRepository.blacklistToken(jti),
     ]);
   }
 
-  async getAvatarUploadUrl({
-    fileType,
-  }: AvatarUploadDTO['body']): Promise<string> {
+  async getAvatarUploadUrl({ fileType }: AvatarUploadDTO['body']) {
     const key = `avatars/${Date.now()}_${randomUUID()}.${fileType}`;
     return this._r2bucketService.generateUploadUrl(key, fileType);
   }
 
-  async deleteUserAvatar(userId: Types.ObjectId | string): Promise<void> {
+  async deleteUserAvatar(userId: Types.ObjectId) {
     const user = await this.userRepository.findById(userId, 'avatar');
     if (!user) throw new HttpError(404, 'Account does not exist');
     if (!user.avatar) throw new HttpError(404, 'No avatar to delete');
@@ -175,7 +156,7 @@ class UserService {
     ]);
   }
 
-  async deleteAccount({ userId }: UserIdDTO['params']): Promise<void> {
+  async deleteAccount({ userId }: UserIdDTO['params']) {
     const { deletedCount } = await this.userRepository.deleteById(userId);
     if (deletedCount < 1) throw new HttpError(404, 'Account does not exist');
   }

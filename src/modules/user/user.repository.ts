@@ -35,9 +35,10 @@ class UserRepository {
     return UserModel.findOne({ email }).lean();
   }
 
-  async findById(userId: Types.ObjectId | string, select?: string) {
-    const query = UserModel.findOne({ _id: userId }).lean();
-    return select ? query.select(select) : query;
+  async findById(userId: Types.ObjectId, select?: string) {
+    const query = UserModel.findOne({ _id: userId });
+    if (select) query.select(select);
+    return query.lean();
   }
 
   async findByEmailAndProvider(email: string, provider: AuthProviderEnum) {
@@ -45,57 +46,73 @@ class UserRepository {
   }
 
   updateById(
-    userId: Types.ObjectId | string,
+    userId: Types.ObjectId,
     updates: UpdateQuery<IUser> | UpdateWithAggregationPipeline,
   ) {
     return UserModel.updateOne({ _id: userId }, updates);
   }
 
-  deleteById(userId: Types.ObjectId | string) {
+  deleteById(userId: Types.ObjectId) {
     return UserModel.deleteOne({ _id: userId });
   }
 
-  updatePassword(userId: string, hashedPassword: string) {
+  updatePassword(userId: Types.ObjectId, hashedPassword: string) {
     return UserModel.updateOne(
       { _id: userId },
       { $set: { hashed_password: hashedPassword } },
     );
   }
 
-  async getVerificationCode(userId: string) {
-    return this.redisClient.get(this.KEYS.verificationCode(userId));
+  async getVerificationCode(userId: Types.ObjectId) {
+    return this.redisClient.get(this.KEYS.verificationCode(userId.toString()));
   }
 
-  async setVerificationCode(userId: string, code: string) {
-    return this.redisClient.set(this.KEYS.verificationCode(userId), code, {
-      expiration: { type: 'EX', value: 300 },
-    });
+  async setVerificationCode(userId: Types.ObjectId, code: string) {
+    return this.redisClient.set(
+      this.KEYS.verificationCode(userId.toString()),
+      code,
+      {
+        expiration: { type: 'EX', value: 300 },
+      },
+    );
   }
 
-  async delVerificationCode(userId: string) {
-    return this.redisClient.del(this.KEYS.verificationCode(userId));
+  async delVerificationCode(userId: Types.ObjectId) {
+    return this.redisClient.del(this.KEYS.verificationCode(userId.toString()));
   }
 
-  async verificationCodeExists(userId: string) {
-    return this.redisClient.exists(this.KEYS.verificationCode(userId));
+  async verificationCodeExists(userId: Types.ObjectId) {
+    return this.redisClient.exists(
+      this.KEYS.verificationCode(userId.toString()),
+    );
   }
 
-  async get2FAActivationCode(userId: string) {
-    return this.redisClient.get(this.KEYS.twoFAActivationCode(userId));
+  async get2FAActivationCode(userId: Types.ObjectId) {
+    return this.redisClient.get(
+      this.KEYS.twoFAActivationCode(userId.toString()),
+    );
   }
 
-  async set2FAActivationCode(userId: string, code: string) {
-    return this.redisClient.set(this.KEYS.twoFAActivationCode(userId), code, {
-      expiration: { type: 'EX', value: 300 },
-    });
+  async set2FAActivationCode(userId: Types.ObjectId, code: string) {
+    return this.redisClient.set(
+      this.KEYS.twoFAActivationCode(userId.toString()),
+      code,
+      {
+        expiration: { type: 'EX', value: 300 },
+      },
+    );
   }
 
-  async del2FAActivationCode(userId: string) {
-    return this.redisClient.del(this.KEYS.twoFAActivationCode(userId));
+  async del2FAActivationCode(userId: Types.ObjectId) {
+    return this.redisClient.del(
+      this.KEYS.twoFAActivationCode(userId.toString()),
+    );
   }
 
-  async twoFAActivationCodeExists(userId: string) {
-    return this.redisClient.exists(this.KEYS.twoFAActivationCode(userId));
+  async twoFAActivationCodeExists(userId: Types.ObjectId) {
+    return this.redisClient.exists(
+      this.KEYS.twoFAActivationCode(userId.toString()),
+    );
   }
 }
 
