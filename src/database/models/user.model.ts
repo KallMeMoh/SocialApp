@@ -49,7 +49,7 @@ const userSchema = new Schema<IUser>(
       default: () => new Date(),
       index: { expireAfterSeconds: 86400 },
     },
-    isDeleted: { type: Date, default: null },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,

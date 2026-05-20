@@ -4,7 +4,7 @@ import type { IComment } from '../../common/types/comment.type.js';
 
 const commentSchema = new Schema<IComment>(
   {
-    authorId: {
+    author: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
@@ -34,7 +34,7 @@ const commentSchema = new Schema<IComment>(
       replyCount: { type: Number, default: 0 },
     },
 
-    isDeleted: { type: Date, default: null },
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true },
 );

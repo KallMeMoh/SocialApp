@@ -21,11 +21,14 @@ import { otpTemplate } from '../../common/utils/email/templates/otp.js';
 import AuthRepository from './auth.repository.js';
 import UserRepository from '../user/user.repository.js';
 import { UserRoleEnum } from '../../common/types/user.type.js';
-import type { SignupDTO } from '../../common/validation/signup.schema.js';
-import type { LoginDTO } from '../../common/validation/login.schema.js';
-import type { ConfirmationDTO } from '../../common/validation/confirmation.schema.js';
-import type { ResetPasswordDTO } from '../../common/validation/reset-password.schema.js';
-import type { ForgotPasswordDTO } from '../../common/validation/forget-password.schema.js';
+import type { Types } from 'mongoose';
+import type {
+  ConfirmationDTO,
+  ForgotPasswordDTO,
+  LoginDTO,
+  ResetPasswordDTO,
+  SignupDTO,
+} from './auth.dto.js';
 
 class AuthService {
   client = new OAuth2Client();
@@ -51,7 +54,7 @@ class AuthService {
       provider: AuthProviderEnum.System,
       role: UserRoleEnum.User,
       verificationExpiry: new Date(),
-      isDeleted: null,
+      deletedAt: null,
     });
 
     const code = randomInt(100_000, 999_999).toString();
@@ -162,7 +165,7 @@ class AuthService {
       has2FA: false,
       role: UserRoleEnum.User,
       verificationExpiry: null,
-      isDeleted: null,
+      deletedAt: null,
     });
   }
 
@@ -191,7 +194,7 @@ class AuthService {
     return generateTokens(user._id, user.role!);
   }
 
-  async rotateToken(userId: string, jti: string) {
+  async rotateToken(userId: Types.ObjectId, jti: string) {
     const user = await this.userRepository.findById(userId);
 
     if (!user) throw new HttpError(404, 'Account does not exist');

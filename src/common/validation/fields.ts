@@ -1,4 +1,11 @@
+import { Types } from 'mongoose';
 import { z } from 'zod';
+import { MediaTypeEnum } from '../types/post.type.js';
+
+export const id = z
+  .string()
+  .refine(Types.ObjectId.isValid, { error: 'Invalid resource ID' })
+  .transform((val) => new Types.ObjectId(val));
 
 export const username = z
   .string()
@@ -34,9 +41,22 @@ export const password = z
     error: 'Passwords must contain at least one special character',
   });
 
-export const id = z
+export const postText = z
   .string()
-  .regex(/^[a-fA-F0-9]{24}$/, { error: 'Invalid user Id' });
+  .trim()
+  .max(1000, { error: 'Text must be at most 1000 characters' });
+
+export const postHashtags = z.array(z.string().toLowerCase().trim()).max(10);
+
+export const postMentions = z.array(id).max(20);
+
+export const postMedia = z
+  .array(
+    z.object({
+      mimeType: z.enum(Object.values(MediaTypeEnum)),
+    }),
+  )
+  .max(4);
 
 export const otp = z
   .string()

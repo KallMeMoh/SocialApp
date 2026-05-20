@@ -2,7 +2,7 @@ import type { Types } from 'mongoose';
 import type { ReactionEnum } from './reaction.type.js';
 
 export interface IComment {
-  authorId: Types.ObjectId;
+  author: Types.ObjectId;
   text: string;
 
   postId: Types.ObjectId | null;
@@ -14,5 +14,5 @@ export interface IComment {
     reactionCounts: Record<ReactionEnum, number>;
     replyCount: number;
   };
-  isDeleted?: Date;
+  deletedAt: Date | null;
 }

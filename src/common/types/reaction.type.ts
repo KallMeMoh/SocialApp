@@ -17,5 +17,5 @@ export interface IReaction {
   postId: Types.ObjectId | null;
   commentId: Types.ObjectId | null;
 
-  isDeleted?: Date;
+  deletedAt: Date | null;
 }

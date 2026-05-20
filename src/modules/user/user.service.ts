@@ -31,7 +31,7 @@ class UserService {
 
     await this.userRepository.updateById(userId, { $inc: { visits: 1 } });
 
-    const { _id, provider, updatedAt, __v, ...userObj } = user;
+    const { _id, provider, password, updatedAt, __v, ...userObj } = user;
 
     return userObj;
   }
@@ -160,7 +160,7 @@ class UserService {
   async getAvatarUploadUrl({
     fileType,
   }: AvatarUploadDTO['body']): Promise<string> {
-    const key = `uploads/avatars/${Date.now()}_${randomUUID()}.${fileType}`;
+    const key = `avatars/${Date.now()}_${randomUUID()}.${fileType}`;
     return this._r2bucketService.generateUploadUrl(key, fileType);
   }
 

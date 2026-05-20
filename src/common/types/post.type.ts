@@ -1,17 +1,29 @@
 import type { Types } from 'mongoose';
 import type { ReactionEnum } from './reaction.type.js';
 
-export type MediaType = 'image' | 'video' | 'gif';
+export enum MediaTypeEnum {
+  Png = 'image/png',
+  Jpeg = 'image/jpeg',
+  Jpg = 'image/jpg',
+  Gif = 'image/gif',
+  Mp4 = 'video/mp4',
+}
 
 export interface Media {
-  url: string;
-  type: MediaType;
+  key: string;
+  mimeType: MediaTypeEnum;
+}
+
+export enum PostStatusEnum {
+  Draft = 'draft',
+  Published = 'published',
+  Failed = 'failed',
 }
 
 export interface IPost {
-  authorId: Types.ObjectId;
+  author: Types.ObjectId;
   content: {
-    text: String;
+    text: string;
     media: Media[];
   };
   quotedPostId: Types.ObjectId | null;
@@ -20,7 +32,8 @@ export interface IPost {
     commentCount: number;
     quoteCount: number;
   };
-  hashtags: String[];
-  mentions: String[];
-  isDeleted?: Date;
+  hashtags: string[];
+  mentions: Types.ObjectId[];
+  status: PostStatusEnum;
+  deletedAt: Date | null;
 }

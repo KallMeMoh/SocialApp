@@ -7,13 +7,10 @@ export enum StoryTypeEnum {
 }
 
 export interface IStory {
-  authorId: Types.ObjectId;
+  author: Types.ObjectId;
   type: StoryTypeEnum;
-  url?: string;
-  text?: string;
+  url: string | null;
+  text: string | null;
   expiresAt: Date;
-  stats: {
-    viewCount: number;
-  };
-  isDeleted?: Date;
+  deletedAt: Date | null;
 }

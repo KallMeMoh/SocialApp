@@ -1,12 +1,15 @@
 import { Router } from 'express';
+
 import UserService from './user.service.js';
-import { avatarUploadSchema } from '../../common/validation/avatar-upload.schema.js';
 import { validate } from '../../middlewares/validation.js';
 import { UserRoleEnum } from '../../common/types/user.type.js';
 import { authorize } from '../../middlewares/authorization.js';
-import { userIdSchema } from '../../common/validation/user-id.schema.js';
-import { oneTimePasswordSchema } from '../../common/validation/otp.schema.js';
-import { changePasswordSchema } from '../../common/validation/change-password.schema.js';
+import {
+  avatarUploadSchema,
+  changePasswordSchema,
+  oneTimePasswordSchema,
+  userIdSchema,
+} from './user.dto.js';
 
 export const userRouter = Router();
 
@@ -68,14 +71,14 @@ userRouter.get(
 );
 
 userRouter.delete('/', async (req, res) => {
-  await UserService.deleteAccount({ userId: req.userId ?? '' });
+  await UserService.deleteAccount({ userId: req.userId! });
   return res.status(200).json({ message: 'Account deleted successfully' });
 });
 
 userRouter.delete(
   '/:userId',
-  authorize(UserRoleEnum.Admin),
   validate(userIdSchema),
+  authorize(UserRoleEnum.Admin),
   async (req, res) => {
     await UserService.deleteAccount(req.params);
     return res.status(200).json({ message: 'Account deleted successfully' });

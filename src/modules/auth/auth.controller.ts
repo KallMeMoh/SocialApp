@@ -2,13 +2,15 @@ import { Router } from 'express';
 
 import AuthService from './auth.service.js';
 import { validate } from '../../middlewares/validation.js';
-import { signupSchema } from '../../common/validation/signup.schema.js';
-import { loginSchema } from '../../common/validation/login.schema.js';
-import { confirmationSchema } from '../../common/validation/confirmation.schema.js';
 import { TokenTypeEnum } from '../../common/types/auth.type.js';
 import { authenticate } from '../../middlewares/authentication.js';
-import { resetPasswordSchema } from '../../common/validation/reset-password.schema.js';
-import { forgetPasswordSchema } from '../../common/validation/forget-password.schema.js';
+import {
+  confirmationSchema,
+  forgetPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  signupSchema,
+} from './auth.dto.js';
 
 const authRouter = Router();
 

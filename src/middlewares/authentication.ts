@@ -6,6 +6,7 @@ import { isTokenTypeEnum, TokenTypeEnum } from '../common/types/auth.type.js';
 import { getSignature } from '../common/utils/auth/token-signature.js';
 import { RedisClient } from '../database/redis.connection.js';
 import { isUserRoleEnum } from '../common/types/user.type.js';
+import { Types } from 'mongoose';
 
 export const authenticate =
   (requiredTokenType = TokenTypeEnum.Access) =>
@@ -29,10 +30,9 @@ export const authenticate =
         string?,
       ];
 
-      if (!role || !tokenType)
-        throw new HttpError(401, 'Invalid or malformed token');
-
       if (
+        !role ||
+        !tokenType ||
         !isUserRoleEnum(role) ||
         !isTokenTypeEnum(tokenType) ||
         tokenType !== requiredTokenType
@@ -45,10 +45,14 @@ export const authenticate =
 
       const { sub, jti } = jwt.verify(token, signature) as JwtPayload;
 
-      if (await RedisClient.get(`jwt:blacklist:${jti}`))
+      if (
+        !jti ||
+        !Types.ObjectId.isValid(sub ?? '') ||
+        (await RedisClient.get(`jwt:blacklist:${jti}`))
+      )
         throw new HttpError(401, 'Invalid or malformed token');
 
-      req.userId = sub;
+      req.userId = new Types.ObjectId(sub);
       req.tokenId = jti;
       req.userRole = role;
       next();

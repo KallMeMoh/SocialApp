@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -47,6 +48,20 @@ class R2BucketService {
       Key: key,
     });
     await this._client.send(command);
+  }
+
+  async fileExists(key: string): Promise<boolean> {
+    try {
+      await this._client.send(
+        new HeadObjectCommand({
+          Bucket: R2_BUCKET_NAME,
+          Key: key,
+        }),
+      );
+      return true;
+    } catch (err) {
+      return false;
+    }
   }
 }
 

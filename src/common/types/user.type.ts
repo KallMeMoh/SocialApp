@@ -1,8 +1,6 @@
-import type { Types } from 'mongoose';
 import type { AuthProviderEnum } from './auth.type.js';
 
 interface IUserBase {
-  _id: Types.ObjectId;
   username: string;
   email: string;
   avatar: string | null;
@@ -10,9 +8,7 @@ interface IUserBase {
   has2FA: boolean;
   role: UserRoleEnum;
   verificationExpiry: Date | null;
-  isDeleted: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
+  deletedAt: Date | null;
 }
 
 export type IUser =
