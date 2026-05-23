@@ -58,6 +58,11 @@ export const postMedia = z
   )
   .max(4);
 
+export const commentText = z
+  .string()
+  .trim()
+  .max(250, { error: 'Text must be at most 250 characters' });
+
 export const otp = z
   .string()
   .length(6, { error: 'OTP must be 6 digits' })

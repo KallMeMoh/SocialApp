@@ -14,6 +14,7 @@ export const createPostSchema = z.object({
     mentions: postMentions,
     hashtags: postHashtags,
     media: postMedia,
+    quotedPost: id.optional(),
   }),
 
   query: z.object({ ln }),

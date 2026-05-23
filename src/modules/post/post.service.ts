@@ -1,19 +1,15 @@
 import { Types } from 'mongoose';
 import { HttpError } from '../../common/errors/http-error.js';
-import type { CreatePostDTO } from '../../common/validation/create-post.schema.js';
-import type { PostIdDTO } from '../../common/validation/post-id.schema.js';
-import type { UpdatePostDTO } from '../../common/validation/update-post.schema.js';
-import UserRepository from '../user/user.repository.js';
 import PostRepository from './post.repository.js';
 import CommentRepository from '../comment/comment.repository.js';
 import { PostStatusEnum } from '../../common/types/post.type.js';
 import R2BucketService from '../../common/services/r2bucket.service.js';
 import { randomUUID } from 'node:crypto';
+import type { CreatePostDTO, PostIdDTO, UpdatePostDTO } from './post.dto.js';
 
 class PostService {
   constructor(
     private readonly _r2BucketService: typeof R2BucketService,
-    private readonly _userRepository: typeof UserRepository,
     private readonly _postRepository: typeof PostRepository,
     private readonly _commentRepository: typeof CommentRepository,
   ) {}
@@ -32,14 +28,14 @@ class PostService {
   }
 
   async getPostComments({ postId }: PostIdDTO['params']) {
-    const comments = await this._commentRepository.findComments(
+    const comments = await this._commentRepository.findByPostId(
       new Types.ObjectId(postId),
     );
 
     return comments;
   }
 
-  async createPost(userId: Types.ObjectId, body: CreatePostDTO['body']) {
+  async createPost(authorId: Types.ObjectId, body: CreatePostDTO['body']) {
     const postMedia = await Promise.all(
       body.media.map(async (m) => {
         const key = `posts/${Date.now()}_${randomUUID()}.${m.mimeType.split('/')[1]}`;
@@ -56,14 +52,14 @@ class PostService {
     );
 
     const post = await this._postRepository.create({
-      author: userId,
+      author: authorId,
       content: {
         text: body.text,
         media: postMedia.map(({ key, mimeType }) => ({ key, mimeType })),
       },
-      quotedPostId: null,
-      hashtags: [],
-      mentions: [],
+      quotedPost: body.quotedPost ?? null,
+      hashtags: body.hashtags,
+      mentions: body.mentions,
       stats: {
         commentCount: 0,
         quoteCount: 0,
@@ -86,7 +82,7 @@ class PostService {
 
   async confirmPostCreation(
     userId: Types.ObjectId,
-    { postId }: PostConfirmationDTO['params'],
+    { postId }: PostIdDTO['params'],
   ) {
     const post = await this._postRepository.findById(postId);
     if (!post || !userId.equals(post.author._id))
@@ -101,7 +97,7 @@ class PostService {
     const allUploaded = results.every(Boolean);
 
     if (allUploaded) {
-      const updatedPost = await this._postRepository.updateById(postId, {
+      const updatedPost = await this._postRepository.findByIdAndUpdate(postId, {
         status: PostStatusEnum.Published,
       });
       return updatedPost;
@@ -117,45 +113,34 @@ class PostService {
   }
 
   async updatePost(
-    params: UpdatePostDTO['params'],
+    userId: Types.ObjectId,
     body: UpdatePostDTO['body'],
+    params: UpdatePostDTO['params'],
   ) {
     const postId = new Types.ObjectId(params.postId);
 
-    await this._postRepository.updateById(postId, body);
     const post = await this._postRepository.findById(postId);
+    if (!post?.author.equals(userId))
+      throw new HttpError(404, 'Post does not exit');
 
-    return post;
+    const updatedPost = await this._postRepository.findByIdAndUpdate(
+      postId,
+      body,
+    );
+    return updatedPost;
   }
 
-  async softDeletePost(userId: Types.ObjectId, params: PostIdDTO['params']) {
-    const user = await this._userRepository.findById(userId);
-    if (!user) throw new HttpError(404, 'User does not exist');
-
-    const postId = new Types.ObjectId(params.postId);
-    const post = await this._postRepository.findById(postId);
-    if (!post) throw new HttpError(404, 'Post does not exist');
-
-    if (user._id.toString() !== post.author.toString())
-      throw new HttpError(401, 'Unauthorized');
-
-    await this._postRepository.softDelete(postId);
-    return post;
-  }
-
-  async deletePost(params: PostIdDTO['params']) {
-    const postId = new Types.ObjectId(params.postId);
-    const post = await this._postRepository.findById(postId);
-    if (!post) throw new HttpError(404, 'Post does not exist');
-
-    await this._postRepository.deleteById(postId);
-    return post;
+  async deletePost(userId: Types.ObjectId, params: PostIdDTO['params']) {
+    const { modifiedCount } = await this._postRepository.softDelete(
+      params.postId,
+      userId,
+    );
+    if (modifiedCount < 1) throw new HttpError(404, 'Post does not exist');
   }
 }
 
 export default new PostService(
   R2BucketService,
-  UserRepository,
   PostRepository,
   CommentRepository,
 );

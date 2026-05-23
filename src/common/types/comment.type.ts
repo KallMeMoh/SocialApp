@@ -5,10 +5,8 @@ export interface IComment {
   author: Types.ObjectId;
   text: string;
 
-  postId: Types.ObjectId | null;
-  parentId: Types.ObjectId | null;
-
-  rootPostId: Types.ObjectId | null;
+  post: Types.ObjectId;
+  comment: Types.ObjectId | null;
 
   stats: {
     reactionCounts: Record<ReactionEnum, number>;

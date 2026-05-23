@@ -53,7 +53,7 @@ class UserRepository {
   }
 
   deleteById(userId: Types.ObjectId) {
-    return UserModel.deleteOne({ _id: userId });
+    return UserModel.updateOne({ _id: userId }, { deletedAt: new Date() });
   }
 
   updatePassword(userId: Types.ObjectId, hashedPassword: string) {

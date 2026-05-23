@@ -27,7 +27,7 @@ const postSchema = new Schema<IPost>(
       },
     },
 
-    quotedPostId: {
+    quotedPost: {
       type: Schema.Types.ObjectId,
       ref: 'Post',
     },

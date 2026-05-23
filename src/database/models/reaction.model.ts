@@ -6,11 +6,11 @@ import {
 
 const reactionSchema = new Schema<IReaction>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     emoji: { type: String, enum: Object.values(ReactionEnum), required: true },
 
-    postId: { type: Schema.Types.ObjectId, ref: 'Post', default: null },
-    commentId: { type: Schema.Types.ObjectId, ref: 'Comment', default: null },
+    post: { type: Schema.Types.ObjectId, ref: 'Post', default: null },
+    comment: { type: Schema.Types.ObjectId, ref: 'Comment', default: null },
 
     deletedAt: { type: Date, default: null },
   },
@@ -18,11 +18,11 @@ const reactionSchema = new Schema<IReaction>(
 );
 
 reactionSchema.index(
-  { userId: 1, emoji: 1, postId: 1 },
+  { author: 1, emoji: 1, post: 1 },
   { unique: true, sparse: true },
 );
 reactionSchema.index(
-  { userId: 1, emoji: 1, commentId: 1 },
+  { author: 1, emoji: 1, comment: 1 },
   { unique: true, sparse: true },
 );
 

@@ -1,20 +1,21 @@
+import type { Types } from 'mongoose';
 import { RedisClient } from '../../database/redis.connection.js';
 
 class AuthRepository {
   private readonly KEYS = {
-    loginCounter: (userId: string) => `auth:login-counter:${userId}`,
+    loginCounter: (userId: Types.ObjectId) => `auth:login-counter:${userId}`,
     passwordReset: (token: string) => `auth:password-reset:${token}`,
-    login2FA: (userId: string) => `auth:login-2fa:${userId}`,
+    login2FA: (userId: Types.ObjectId) => `auth:login-2fa:${userId}`,
     jwtBlacklist: (jti: string) => `jwt:blacklist:${jti}`,
   } as const;
 
   constructor(private readonly redisClient: typeof RedisClient) {}
 
-  async getLoginAttempts(userId: string) {
+  async getLoginAttempts(userId: Types.ObjectId) {
     return this.redisClient.get(this.KEYS.loginCounter(userId));
   }
 
-  async incrementLoginAttempts(userId: string) {
+  async incrementLoginAttempts(userId: Types.ObjectId) {
     const count = await this.redisClient.incr(this.KEYS.loginCounter(userId));
     if (count === 1) {
       await this.redisClient.expire(this.KEYS.loginCounter(userId), 1800);
@@ -22,27 +23,31 @@ class AuthRepository {
     return count;
   }
 
-  async resetLoginAttempts(userId: string) {
+  async resetLoginAttempts(userId: Types.ObjectId) {
     return this.redisClient.del(this.KEYS.loginCounter(userId));
   }
 
-  async setPasswordResetToken(token: string, userId: string) {
-    return this.redisClient.set(this.KEYS.passwordReset(token), userId, {
-      expiration: { type: 'EX', value: 300 },
-    });
+  async setPasswordResetToken(token: string, userId: Types.ObjectId) {
+    return this.redisClient.set(
+      this.KEYS.passwordReset(token),
+      userId.toString(),
+      {
+        expiration: { type: 'EX', value: 300 },
+      },
+    );
   }
 
   async getPasswordResetToken(token: string) {
     return this.redisClient.get(this.KEYS.passwordReset(token));
   }
 
-  async store2FACode(userId: string, code: string) {
+  async store2FACode(userId: Types.ObjectId, code: string) {
     return this.redisClient.set(this.KEYS.login2FA(userId), code, {
       expiration: { type: 'EX', value: 300 },
     });
   }
 
-  async get2FACode(userId: string) {
+  async get2FACode(userId: Types.ObjectId) {
     return this.redisClient.get(this.KEYS.login2FA(userId));
   }
 

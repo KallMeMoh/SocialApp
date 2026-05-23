@@ -21,7 +21,7 @@ import { otpTemplate } from '../../common/utils/email/templates/otp.js';
 import AuthRepository from './auth.repository.js';
 import UserRepository from '../user/user.repository.js';
 import { UserRoleEnum } from '../../common/types/user.type.js';
-import type { Types } from 'mongoose';
+import { Types } from 'mongoose';
 import type {
   ConfirmationDTO,
   ForgotPasswordDTO,
@@ -58,7 +58,7 @@ class AuthService {
     });
 
     const code = randomInt(100_000, 999_999).toString();
-    await this.userRepository.setVerificationCode(user._id.toString(), code);
+    await this.userRepository.setVerificationCode(user._id, code);
     transporter
       .sendMail({
         from: 'onboarding@resend.dev',
@@ -82,15 +82,13 @@ class AuthService {
         'This account uses Google sign-in. Please continue with Google.',
       );
 
-    const loginAttempts = await this.authRepository.getLoginAttempts(
-      user._id.toString(),
-    );
+    const loginAttempts = await this.authRepository.getLoginAttempts(user._id);
     if (loginAttempts && parseInt(loginAttempts) > 5)
       throw new HttpError(401, 'Account temporarily banned, try again later');
 
     const matchedPassword = await compare(password, user.password!);
     if (!matchedPassword) {
-      await this.authRepository.incrementLoginAttempts(user._id.toString());
+      await this.authRepository.incrementLoginAttempts(user._id);
       throw new HttpError(401, 'Invalid credentials');
     }
 
@@ -101,7 +99,7 @@ class AuthService {
       });
 
       const code = randomInt(100_000, 999_999).toString();
-      await this.authRepository.store2FACode(user._id.toString(), code);
+      await this.authRepository.store2FACode(user._id, code);
       await transporter.sendMail({
         from: 'onboarding@resend.dev',
         to: user.email,
@@ -116,27 +114,25 @@ class AuthService {
   }
 
   async confirmLogin({ otp, token }: ConfirmationDTO['body']) {
-    const { sub = undefined } = jwt.verify(
-      token,
-      PENDING_AUTH_SIGNATURE,
-    ) as JwtPayload;
+    const { sub } = jwt.verify(token, PENDING_AUTH_SIGNATURE) as JwtPayload;
 
+    if (!sub) throw new HttpError(404, 'Malformed Token');
+
+    const userId = new Types.ObjectId(sub);
     const [user, code] = await Promise.all([
-      this.userRepository.findById(sub ?? ''),
-      this.authRepository.get2FACode(sub ?? ''),
+      this.userRepository.findById(userId),
+      this.authRepository.get2FACode(userId),
     ]);
 
     if (!user) throw new HttpError(404, 'Account does not exist');
     if (!code) throw new HttpError(404, 'OTP Expired, please login again');
 
-    const loginAttempts = await this.authRepository.getLoginAttempts(
-      user._id.toString(),
-    );
+    const loginAttempts = await this.authRepository.getLoginAttempts(user._id);
     if (loginAttempts && parseInt(loginAttempts) > 5)
       throw new HttpError(401, 'Account temporarily banned, try again later');
 
     if (otp !== code) {
-      await this.authRepository.incrementLoginAttempts(user._id.toString());
+      await this.authRepository.incrementLoginAttempts(user._id);
       throw new HttpError(401, 'Invalid credentials');
     }
 
@@ -214,7 +210,7 @@ class AuthService {
     if (!user) return;
 
     const token = randomBytes(32).toString('hex');
-    await this.authRepository.setPasswordResetToken(token, user._id.toString());
+    await this.authRepository.setPasswordResetToken(token, user._id);
     await sendPasswordResetEmail(
       user.email,
       `${FRONTEND_URL}/reset-password?token=${token}`,
@@ -225,11 +221,17 @@ class AuthService {
     { token }: ResetPasswordDTO['params'],
     { new_password }: ResetPasswordDTO['body'],
   ) {
-    const userId = await this.authRepository.getPasswordResetToken(token);
-    if (!userId) throw new HttpError(404, 'Invalid or expired reset token');
+    const userId =
+      (await this.authRepository.getPasswordResetToken(token)) ?? '';
+
+    if (!Types.ObjectId.isValid(userId))
+      throw new HttpError(404, 'Invalid or expired reset token');
 
     const hashedPassword = await hash(new_password, SALT_ROUNDS);
-    await this.userRepository.updatePassword(userId, hashedPassword);
+    await this.userRepository.updatePassword(
+      new Types.ObjectId(userId),
+      hashedPassword,
+    );
   }
 
   async blacklistToken(jti: string) {

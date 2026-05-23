@@ -11,16 +11,10 @@ const commentSchema = new Schema<IComment>(
     },
     text: { type: String, maxlength: 280, required: true },
 
-    postId: { type: Schema.Types.ObjectId, ref: 'Post', default: null },
-    parentId: {
+    post: { type: Schema.Types.ObjectId, ref: 'Post', required: true },
+    comment: {
       type: Schema.Types.ObjectId,
       ref: 'Comment',
-      default: null,
-    },
-
-    rootPostId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Post',
       default: null,
     },
 
@@ -40,6 +34,6 @@ const commentSchema = new Schema<IComment>(
 );
 
 commentSchema.index({ rootPost: 1, createdAt: -1 });
-commentSchema.index({ parentId: 1, createdAt: -1 });
+commentSchema.index({ parent: 1, createdAt: -1 });
 
 export const CommentModel = model('Comment', commentSchema);

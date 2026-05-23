@@ -26,7 +26,7 @@ export interface IPost {
     text: string;
     media: Media[];
   };
-  quotedPostId: Types.ObjectId | null;
+  quotedPost: Types.ObjectId | null;
   stats: {
     reactionCounts: Record<ReactionEnum, number>;
     commentCount: number;

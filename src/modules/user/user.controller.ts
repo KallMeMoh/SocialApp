@@ -2,8 +2,6 @@ import { Router } from 'express';
 
 import UserService from './user.service.js';
 import { validate } from '../../middlewares/validation.js';
-import { UserRoleEnum } from '../../common/types/user.type.js';
-import { authorize } from '../../middlewares/authorization.js';
 import {
   avatarUploadSchema,
   changePasswordSchema,
@@ -71,16 +69,6 @@ userRouter.get(
 );
 
 userRouter.delete('/', async (req, res) => {
-  await UserService.deleteAccount({ userId: req.userId! });
+  await UserService.deleteAccount(req.userId!, req.tokenId!);
   return res.status(200).json({ message: 'Account deleted successfully' });
 });
-
-userRouter.delete(
-  '/:userId',
-  validate(userIdSchema),
-  authorize(UserRoleEnum.Admin),
-  async (req, res) => {
-    await UserService.deleteAccount(req.params);
-    return res.status(200).json({ message: 'Account deleted successfully' });
-  },
-);

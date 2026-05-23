@@ -10,12 +10,12 @@ export enum ReactionEnum {
 }
 
 export interface IReaction {
-  userId: Types.ObjectId;
+  author: Types.ObjectId;
   emoji: ReactionEnum;
 
   // note to self: either will be set but not both
-  postId: Types.ObjectId | null;
-  commentId: Types.ObjectId | null;
+  post: Types.ObjectId | null;
+  comment: Types.ObjectId | null;
 
   deletedAt: Date | null;
 }

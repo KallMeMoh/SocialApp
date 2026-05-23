@@ -1,8 +1,6 @@
 import { Router } from 'express';
 import PostService from './post.service.js';
 import { validate } from '../../middlewares/validation.js';
-import { authorize } from '../../middlewares/authorization.js';
-import { UserRoleEnum } from '../../common/types/user.type.js';
 import {
   createPostSchema,
   postIdSchema,
@@ -21,13 +19,14 @@ postRouter.get('/:postId', validate(postIdSchema), async (req, res) => {
   return res.status(200).json(post);
 });
 
-postRouter.post('/:postId/publish', async (req, res) => {
-  const post = await PostService.confirmPostCreation(
-    req.userId!,
-    req.params.postId,
-  );
-  return res.status(200).json(post);
-});
+postRouter.post(
+  '/:postId/publish',
+  validate(postIdSchema),
+  async (req, res) => {
+    const post = await PostService.confirmPostCreation(req.userId!, req.params);
+    return res.status(200).json(post);
+  },
+);
 
 postRouter.get(
   '/:postId/comments',
@@ -44,21 +43,11 @@ postRouter.post('/', validate(createPostSchema), async (req, res) => {
 });
 
 postRouter.patch('/:postId', validate(updatePostSchema), async (req, res) => {
-  const post = await PostService.updatePost(req.params, req.body);
+  const post = await PostService.updatePost(req.userId!, req.body, req.params);
   return res.status(200).json(post);
 });
 
 postRouter.delete('/:postId', validate(postIdSchema), async (req, res) => {
-  await PostService.softDeletePost(req.userId!, req.params);
+  await PostService.deletePost(req.userId!, req.params);
   return res.status(200).json({ message: 'Post deleted successfully' });
 });
-
-postRouter.delete(
-  '/:postId/force',
-  validate(postIdSchema),
-  authorize(UserRoleEnum.Admin),
-  async (req, res) => {
-    await PostService.deletePost(req.params);
-    return res.status(200).json({ message: 'Post deleted successfully' });
-  },
-);
