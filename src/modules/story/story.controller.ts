@@ -2,10 +2,10 @@ import { Router } from 'express';
 
 export const storyRouter = Router();
 
-storyRouter.get('/');
+storyRouter.get('/', async (req, res) => {});
 
-storyRouter.get('/:storyId');
+storyRouter.get('/:storyId', async (req, res) => {});
 
-storyRouter.post('/');
+storyRouter.post('/', async (req, res) => {});
 
-storyRouter.delete('/:storyId');
+storyRouter.delete('/:storyId', async (req, res) => {});

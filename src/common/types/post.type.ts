@@ -17,7 +17,6 @@ export interface Media {
 export enum PostStatusEnum {
   Draft = 'draft',
   Published = 'published',
-  Failed = 'failed',
 }
 
 export interface IPost {

@@ -40,7 +40,7 @@ export async function bootstrap() {
       },
     }),
     mutation: new GraphQLObjectType({
-      name: '',
+      name: 'Mutation',
       fields: {},
     }),
   });
