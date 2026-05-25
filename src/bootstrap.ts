@@ -19,6 +19,12 @@ import { postFields } from './modules/post/post.graphql.js';
 import { commentFields } from './modules/comment/comment.graphql.js';
 import { reactionFields } from './modules/reaction/reaction.graphql.js';
 import { storyFields } from './modules/story/story.graphql.js';
+import authService from './modules/auth/auth.service.js';
+import userService from './modules/user/user.service.js';
+import postService from './modules/post/post.service.js';
+import commentService from './modules/comment/comment.service.js';
+import reactionService from './modules/reaction/reaction.service.js';
+import storyService from './modules/story/story.service.js';
 
 export async function bootstrap() {
   const app = express();
@@ -45,7 +51,21 @@ export async function bootstrap() {
     }),
   });
 
-  app.all('/graphql', createHandler({ schema: graphQlSchema }));
+  app.all(
+    '/graphql',
+    createHandler({
+      schema: graphQlSchema,
+      context: (req) => ({
+        req,
+        authService,
+        userService,
+        postService,
+        commentService,
+        reactionService,
+        storyService,
+      }),
+    }),
+  );
 
   app.use('/auth', authRouter);
   app.use('/users', authenticate(), userRouter);
