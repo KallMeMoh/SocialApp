@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { id, ln, otp, password } from '../../common/validation/fields.js';
+import {
+  id,
+  ln,
+  otp,
+  password,
+  username,
+  email,
+} from '../../common/validation/fields.js';
 
 export const userIdSchema = z.object({
   body: z.object({}),
@@ -7,6 +14,22 @@ export const userIdSchema = z.object({
   query: z.object({ ln }),
 
   params: z.object({ userId: id }),
+});
+
+export const userProfileSchema = z.object({
+  body: z.object({}),
+
+  query: z.object({ ln }),
+
+  params: z.object({ username: username }),
+});
+
+export const updateUserSchema = z.object({
+  body: z.object({ username, email }),
+
+  query: z.object({ ln }),
+
+  params: z.object({}),
 });
 
 export const oneTimePasswordSchema = z.object({
@@ -49,6 +72,8 @@ export const avatarUploadSchema = z.object({
 });
 
 export type UserIdDTO = z.infer<typeof userIdSchema>;
+export type UserProfileDTO = z.infer<typeof userProfileSchema>;
+export type UpdateUserDTO = z.infer<typeof updateUserSchema>;
 export type OneTimePasswordSchema = z.infer<typeof oneTimePasswordSchema>;
 export type ChangePasswordSchema = z.infer<typeof changePasswordSchema>;
 export type AvatarUploadDTO = z.infer<typeof avatarUploadSchema>;

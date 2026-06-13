@@ -10,7 +10,12 @@ import { transporter } from '../../common/utils/email/transporter.js';
 import { randomInt } from 'node:crypto';
 import { otpTemplate } from '../../common/utils/email/templates/otp.js';
 import type { Types } from 'mongoose';
-import type { AvatarUploadDTO, UserIdDTO } from './user.dto.js';
+import type {
+  AvatarUploadDTO,
+  UpdateUserDTO,
+  UserIdDTO,
+  UserProfileDTO,
+} from './user.dto.js';
 
 class UserService {
   constructor(
@@ -23,6 +28,31 @@ class UserService {
     const user = await this._userRepository.findById(
       userId,
       '-password -provider -updatedAt -__v',
+    );
+    if (!user) throw new HttpError(404, "User doesn't exist");
+    return user;
+  }
+
+  async getUserByUsername({ username }: UserProfileDTO['params']) {
+    const user = await this._userRepository.findByUsername(
+      username,
+      '-password -provider -updatedAt -__v',
+    );
+    if (!user) throw new HttpError(404, "User doesn't exist");
+    return user;
+  }
+
+  async updateUser(
+    userId: Types.ObjectId,
+    { username, email }: UpdateUserDTO['body'],
+  ) {
+    const user = await this._userRepository.updateById(
+      userId,
+      { $set: { ...(username && { username }), ...(email && { email }) } },
+      {
+        returnDocument: 'after',
+        projection: '-password -provider -updatedAt -__v',
+      },
     );
     if (!user) throw new HttpError(404, "User doesn't exist");
     return user;

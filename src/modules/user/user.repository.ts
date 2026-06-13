@@ -3,6 +3,8 @@ import type { AuthProviderEnum } from '../../common/types/auth.type.js';
 import { UserModel } from '../../database/models/user.model.js';
 import { RedisClient } from '../../database/redis.connection.js';
 import type {
+  ProjectionType,
+  QueryOptions,
   Types,
   UpdateQuery,
   UpdateWithAggregationPipeline,
@@ -31,13 +33,16 @@ class UserRepository {
     return UserModel.create(data);
   }
 
-  async findByEmail(email: string) {
-    return UserModel.findOne({ email }).lean();
+  async findByUsername(username: string, projection?: ProjectionType<IUser>) {
+    return UserModel.findOne({ username }, projection).lean();
   }
 
-  async findById(userId: Types.ObjectId, select?: string) {
-    const query = UserModel.findOne({ _id: userId });
-    if (select) query.select(select);
+  async findByEmail(email: string, projection?: ProjectionType<IUser>) {
+    return UserModel.findOne({ email }, projection).lean();
+  }
+
+  async findById(userId: Types.ObjectId, projection?: ProjectionType<IUser>) {
+    const query = UserModel.findOne({ _id: userId }, projection);
     return query.lean();
   }
 
@@ -48,8 +53,9 @@ class UserRepository {
   updateById(
     userId: Types.ObjectId,
     updates: UpdateQuery<IUser> | UpdateWithAggregationPipeline,
+    options?: QueryOptions<IUser>,
   ) {
-    return UserModel.updateOne({ _id: userId }, updates);
+    return UserModel.findOneAndUpdate({ _id: userId }, updates, options);
   }
 
   deleteById(userId: Types.ObjectId) {

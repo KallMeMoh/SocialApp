@@ -1,7 +1,8 @@
+import cors from 'cors';
 import express from 'express';
 import authRouter from './modules/auth/auth.controller.js';
 import { errorHandler } from './middlewares/error-handler.js';
-import { PORT } from './config/index.js';
+import { FRONTEND_URL, PORT } from './config/index.js';
 import { HttpError } from './common/errors/http-error.js';
 import { connectMongo } from './database/mongo.connection.js';
 import { connectRedis } from './database/redis.connection.js';
@@ -12,19 +13,10 @@ import { storyRouter } from './modules/story/story.controller.js';
 import { reactionRouter } from './modules/reaction/reaction.controller.js';
 import { authenticate } from './middlewares/authentication.js';
 import { GraphQLObjectType, GraphQLSchema } from 'graphql';
-import { authFields } from './modules/auth/auth.graphql.js';
 import { createHandler } from 'graphql-http/lib/use/express';
-import { userFields } from './modules/user/user.graphql.js';
-import { postFields } from './modules/post/post.graphql.js';
-import { commentFields } from './modules/comment/comment.graphql.js';
-import { reactionFields } from './modules/reaction/reaction.graphql.js';
-import { storyFields } from './modules/story/story.graphql.js';
-import authService from './modules/auth/auth.service.js';
+import { userFields, userMutations } from './modules/user/user.graphql.js';
 import userService from './modules/user/user.service.js';
-import postService from './modules/post/post.service.js';
-import commentService from './modules/comment/comment.service.js';
-import reactionService from './modules/reaction/reaction.service.js';
-import storyService from './modules/story/story.service.js';
+import socketGateway from './common/socket/socket.gateway.js';
 
 export async function bootstrap() {
   const app = express();
@@ -32,22 +24,20 @@ export async function bootstrap() {
   await Promise.all([connectMongo(), connectRedis()]);
 
   app.use(express.json());
+  app.use(cors({ origin: FRONTEND_URL }));
 
   const graphQlSchema = new GraphQLSchema({
     query: new GraphQLObjectType({
       name: 'Query',
       fields: {
-        ...authFields,
         ...userFields,
-        ...postFields,
-        ...commentFields,
-        ...reactionFields,
-        ...storyFields,
       },
     }),
     mutation: new GraphQLObjectType({
       name: 'Mutation',
-      fields: {},
+      fields: {
+        ...userMutations,
+      },
     }),
   });
 
@@ -57,12 +47,7 @@ export async function bootstrap() {
       schema: graphQlSchema,
       context: (req) => ({
         req,
-        authService,
         userService,
-        postService,
-        commentService,
-        reactionService,
-        storyService,
       }),
     }),
   );
@@ -80,7 +65,9 @@ export async function bootstrap() {
 
   app.use(errorHandler);
 
-  app.listen(PORT, () =>
+  const server = app.listen(PORT, () =>
     console.log(`Server is up and running on port ${PORT}`),
   );
+
+  socketGateway.createSocketServer(server);
 }
