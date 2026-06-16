@@ -1,20 +1,43 @@
-import chatRepository from './conversation.repository.js';
+import type { Types } from 'mongoose';
+import chatRepository, {
+  ConversationRepository,
+} from './conversation.repository.js';
 
-class ChatService {
-  constructor(private readonly _chatRepository: typeof chatRepository) {}
+export class ConversationService {
+  constructor(
+    private readonly conversationRepository: ConversationRepository,
+  ) {}
+
+  async getConversation(
+    authorId: Types.ObjectId,
+    { participantId }: GetConversationDto['params'],
+  ) {
+    const chat = await this.conversationRepository.getPopulatedConversation(
+      {
+        participant: { $all: [authorId, participantId] },
+      },
+      { popul },
+    );
+  }
+
   async sendMessage(userId: string, conversationId: string, text: string) {
-    const allowed = await this._chatRepository.isParticipant(
+    const allowed = await this.conversationRepository.isParticipant(
       conversationId,
       userId,
     );
     if (!allowed) throw new Error('Not a participant of this conversation');
 
-    return this._chatRepository.createMessage(conversationId, userId, text);
+    return this.conversationRepository.createMessage(
+      conversationId,
+      userId,
+      text,
+    );
   }
 
   getUserRoomIds(userId: string) {
-    return this._chatRepository.getUserConversationIds(userId);
+    return this.conversationRepository.getUserConversationIds(userId);
   }
 }
 
-export default new ChatService(chatRepository);
+const conversationService = new ConversationService(chatRepository);
+export default conversationService;

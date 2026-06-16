@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { chatRouter } from '../conversation/conversation.controller.js';
 import userService from './user.service.js';
 import { validate } from '../../middlewares/validation.js';
 import {
@@ -12,6 +13,8 @@ import {
 } from './user.dto.js';
 
 export const userRouter = Router();
+
+userRouter.use('/:userId/chat', chatRouter);
 
 userRouter.get('/:id', validate(userIdSchema), async (req, res) => {
   const user = await userService.getUserProfile(req.params);

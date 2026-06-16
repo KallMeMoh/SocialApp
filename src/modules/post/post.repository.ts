@@ -2,7 +2,7 @@ import type { QueryFilter, Types, UpdateQuery } from 'mongoose';
 import { PostModel } from '../../database/models/post.model.js';
 import type { IPost } from '../../common/types/post.type.js';
 
-class PostRepository {
+export class PostRepository {
   async exists(postId: Types.ObjectId) {
     return (await PostModel.exists({ _id: postId, deletedAt: null })) !== null;
   }
@@ -47,4 +47,5 @@ class PostRepository {
   }
 }
 
-export default new PostRepository();
+const postRepository = new PostRepository();
+export default postRepository;

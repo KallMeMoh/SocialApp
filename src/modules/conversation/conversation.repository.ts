@@ -1,7 +1,7 @@
 import { ConversationModel } from '../../database/models/conversation.model.js';
 import { MessageModel } from '../../database/models/message.model.js';
 
-class ChatRepository {
+export class ConversationRepository {
   createMessage(conversationId: string, senderId: string, text: string) {
     return MessageModel.create({ conversationId, senderId, text });
   }
@@ -22,4 +22,5 @@ class ChatRepository {
   }
 }
 
-export default new ChatRepository();
+const conversationRepository = new ConversationRepository();
+export default conversationRepository;

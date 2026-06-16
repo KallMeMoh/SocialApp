@@ -1,7 +1,7 @@
 import type { Types } from 'mongoose';
 import { RedisClient } from '../../database/redis.connection.js';
 
-class AuthRepository {
+export class AuthRepository {
   private readonly KEYS = {
     loginCounter: (userId: Types.ObjectId) => `auth:login-counter:${userId}`,
     passwordReset: (token: string) => `auth:password-reset:${token}`,
@@ -58,4 +58,5 @@ class AuthRepository {
   }
 }
 
-export default new AuthRepository(RedisClient);
+const authRepository = new AuthRepository(RedisClient);
+export default authRepository;

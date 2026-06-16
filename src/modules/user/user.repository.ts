@@ -16,7 +16,7 @@ type DistributiveOmit<T, K extends PropertyKey> = T extends any
 
 type CreateInput = DistributiveOmit<IUser, '_id' | 'createdAt' | 'updatedAt'>;
 
-class UserRepository {
+export class UserRepository {
   readonly KEYS = {
     verificationCode: (userId: string) => `user:verification-code:${userId}`,
     twoFAActivationCode: (userId: string) =>
@@ -122,4 +122,5 @@ class UserRepository {
   }
 }
 
-export default new UserRepository(RedisClient);
+const userRepository = new UserRepository(RedisClient);
+export default userRepository;

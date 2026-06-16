@@ -13,7 +13,7 @@ import {
   R2_SECRET_ACCESS_KEY,
 } from '../../config/index.js';
 
-class R2BucketService {
+export class R2BucketService {
   private _client = new S3Client({
     region: 'auto',
     endpoint: `https://${R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`,
@@ -65,4 +65,5 @@ class R2BucketService {
   }
 }
 
-export default new R2BucketService();
+const r2bucketService = new R2BucketService();
+export default r2bucketService;

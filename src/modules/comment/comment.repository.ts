@@ -2,7 +2,7 @@ import { CommentModel } from '../../database/models/comment.model.js';
 import type { IComment } from '../../common/types/comment.type.js';
 import type { Types } from 'mongoose';
 
-class CommentRepository {
+export class CommentRepository {
   async exists(commentId: Types.ObjectId) {
     return (
       (await CommentModel.exists({ _id: commentId, deletedAt: null })) !== null
@@ -37,4 +37,5 @@ class CommentRepository {
   }
 }
 
-export default new CommentRepository();
+const commentRepository = new CommentRepository();
+export default commentRepository;

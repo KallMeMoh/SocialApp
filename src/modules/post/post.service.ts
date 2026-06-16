@@ -1,26 +1,30 @@
 import { Types } from 'mongoose';
 import { HttpError } from '../../common/errors/http-error.js';
-import PostRepository from './post.repository.js';
-import CommentRepository from '../comment/comment.repository.js';
+import postRepository, { PostRepository } from './post.repository.js';
+import commentRepository, {
+  CommentRepository,
+} from '../comment/comment.repository.js';
+import r2bucketService, {
+  R2BucketService,
+} from '../../common/services/r2bucket.service.js';
 import { PostStatusEnum } from '../../common/types/post.type.js';
-import R2BucketService from '../../common/services/r2bucket.service.js';
 import { randomUUID } from 'node:crypto';
 import type { CreatePostDTO, PostIdDTO, UpdatePostDTO } from './post.dto.js';
 
-class PostService {
+export class PostService {
   constructor(
-    private readonly _r2BucketService: typeof R2BucketService,
-    private readonly _postRepository: typeof PostRepository,
-    private readonly _commentRepository: typeof CommentRepository,
+    private readonly r2BucketService: R2BucketService,
+    private readonly postRepository: PostRepository,
+    private readonly commentRepository: CommentRepository,
   ) {}
 
   async getAllPosts() {
-    const posts = await this._postRepository.findAll();
+    const posts = await this.postRepository.findAll();
     return posts;
   }
 
   async getPost({ postId }: PostIdDTO['params']) {
-    const post = await this._postRepository.findById(postId);
+    const post = await this.postRepository.findById(postId);
 
     if (!post) throw new HttpError(404, 'Post not found');
 
@@ -28,7 +32,7 @@ class PostService {
   }
 
   async getPostComments({ postId }: PostIdDTO['params']) {
-    const comments = await this._commentRepository.findByPostId(
+    const comments = await this.commentRepository.findByPostId(
       new Types.ObjectId(postId),
     );
 
@@ -39,7 +43,7 @@ class PostService {
     const postMedia = await Promise.all(
       body.media.map(async (m) => {
         const key = `posts/${Date.now()}_${randomUUID()}.${m.mimeType.split('/')[1]}`;
-        const uploadUrl = await this._r2BucketService.generateUploadUrl(
+        const uploadUrl = await this.r2BucketService.generateUploadUrl(
           key,
           m.mimeType,
         );
@@ -51,7 +55,7 @@ class PostService {
       }),
     );
 
-    const post = await this._postRepository.create({
+    const post = await this.postRepository.create({
       author: authorId,
       content: {
         text: body.text,
@@ -84,7 +88,7 @@ class PostService {
     userId: Types.ObjectId,
     { postId }: PostIdDTO['params'],
   ) {
-    const post = await this._postRepository.findById(postId);
+    const post = await this.postRepository.findById(postId);
     if (!post || !userId.equals(post.author._id))
       throw new HttpError(404, 'Post not found');
 
@@ -92,12 +96,12 @@ class PostService {
       throw new HttpError(409, 'Post already published');
 
     const results = await Promise.all(
-      post.content.media.map((m) => this._r2BucketService.fileExists(m.key)),
+      post.content.media.map((m) => this.r2BucketService.fileExists(m.key)),
     );
     const allUploaded = results.every(Boolean);
 
     if (allUploaded) {
-      const updatedPost = await this._postRepository.findByIdAndUpdate(postId, {
+      const updatedPost = await this.postRepository.findByIdAndUpdate(postId, {
         status: PostStatusEnum.Published,
       });
       return updatedPost;
@@ -105,9 +109,9 @@ class PostService {
       await Promise.all(
         post.content.media
           .filter((_, i) => results[i])
-          .map((m) => this._r2BucketService.deleteFile(m.key)),
+          .map((m) => this.r2BucketService.deleteFile(m.key)),
       );
-      await this._postRepository.deleteById(postId);
+      await this.postRepository.deleteById(postId);
       throw new HttpError(422, 'Some files failed to upload, please try again');
     }
   }
@@ -119,11 +123,11 @@ class PostService {
   ) {
     const postId = new Types.ObjectId(params.postId);
 
-    const post = await this._postRepository.findById(postId);
+    const post = await this.postRepository.findById(postId);
     if (!post?.author.equals(userId))
       throw new HttpError(404, 'Post does not exit');
 
-    const updatedPost = await this._postRepository.findByIdAndUpdate(
+    const updatedPost = await this.postRepository.findByIdAndUpdate(
       postId,
       body,
     );
@@ -131,7 +135,7 @@ class PostService {
   }
 
   async deletePost(userId: Types.ObjectId, params: PostIdDTO['params']) {
-    const { modifiedCount } = await this._postRepository.softDelete(
+    const { modifiedCount } = await this.postRepository.softDelete(
       params.postId,
       userId,
     );
@@ -139,8 +143,9 @@ class PostService {
   }
 }
 
-export default new PostService(
-  R2BucketService,
-  PostRepository,
-  CommentRepository,
+const postService = new PostService(
+  r2bucketService,
+  postRepository,
+  commentRepository,
 );
+export default postService;

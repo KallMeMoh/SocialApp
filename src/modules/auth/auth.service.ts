@@ -18,8 +18,8 @@ import { generateTokens } from '../../common/utils/auth/generate-token.js';
 import { sendPasswordResetEmail } from '../../common/utils/email/send-password-reset-email.js';
 import { transporter } from '../../common/utils/email/transporter.js';
 import { otpTemplate } from '../../common/utils/email/templates/otp.js';
-import AuthRepository from './auth.repository.js';
-import UserRepository from '../user/user.repository.js';
+import authRepository, { AuthRepository } from './auth.repository.js';
+import userRepository, { UserRepository } from '../user/user.repository.js';
 import { UserRoleEnum } from '../../common/types/user.type.js';
 import { Types } from 'mongoose';
 import type {
@@ -30,12 +30,12 @@ import type {
   SignupDTO,
 } from './auth.dto.js';
 
-class AuthService {
+export class AuthService {
   client = new OAuth2Client();
 
   constructor(
-    private userRepository: typeof UserRepository,
-    private authRepository: typeof AuthRepository,
+    private readonly userRepository: UserRepository,
+    private readonly authRepository: AuthRepository,
   ) {}
 
   async signup({ username, email, password }: SignupDTO['body']) {
@@ -239,4 +239,4 @@ class AuthService {
   }
 }
 
-export default new AuthService(UserRepository, AuthRepository);
+export default new AuthService(userRepository, authRepository);

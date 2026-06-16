@@ -4,30 +4,32 @@ import type {
   CreateCommentDTO,
   PatchCommentDTO,
 } from './comment.dto.js';
-import CommentRepository from '../comment/comment.repository.js';
+import postRepository, { PostRepository } from '../post/post.repository.js';
+import commentRepository, {
+  CommentRepository,
+} from '../comment/comment.repository.js';
 import { HttpError } from '../../common/errors/http-error.js';
-import PostRepository from '../post/post.repository.js';
 
-class CommentService {
+export class CommentService {
   constructor(
-    private readonly _postRepository: typeof PostRepository,
-    private readonly _commentRepository: typeof CommentRepository,
+    private readonly postRepository: PostRepository,
+    private readonly commentRepository: CommentRepository,
   ) {}
 
   async createComment(
     authorId: Types.ObjectId,
     body: CreateCommentDTO['body'],
   ) {
-    const postExists = await this._postRepository.exists(body.postId);
+    const postExists = await this.postRepository.exists(body.postId);
     if (!postExists) throw new HttpError(404, 'Post does not exist');
 
     if (
       body.commentId &&
-      !(await this._commentRepository.exists(body.commentId))
+      !(await this.commentRepository.exists(body.commentId))
     )
       throw new HttpError(404, 'Comment does not exist');
 
-    const comment = await this._commentRepository.create({
+    const comment = await this.commentRepository.create({
       author: authorId,
       text: body.text,
       post: body.postId,
@@ -50,10 +52,10 @@ class CommentService {
   }
 
   async getCommentReplies({ commentId }: CommentIdDTO['params']) {
-    const commentExists = await this._commentRepository.exists(commentId);
+    const commentExists = await this.commentRepository.exists(commentId);
     if (!commentExists) throw new HttpError(404, 'Comment does not exist');
 
-    const replies = await this._commentRepository.findByCommentId(commentId);
+    const replies = await this.commentRepository.findByCommentId(commentId);
     return replies;
   }
 
@@ -62,7 +64,7 @@ class CommentService {
     { commentId }: PatchCommentDTO['params'],
     { text }: PatchCommentDTO['body'],
   ) {
-    const comment = await this._commentRepository.findOne(commentId, authorId);
+    const comment = await this.commentRepository.findOne(commentId, authorId);
     if (!comment) throw new HttpError(404, 'Comment does not exist');
 
     comment.text = text;
@@ -73,7 +75,7 @@ class CommentService {
     authorId: Types.ObjectId,
     { commentId }: CommentIdDTO['params'],
   ) {
-    const { modifiedCount } = await this._commentRepository.softDelete(
+    const { modifiedCount } = await this.commentRepository.softDelete(
       commentId,
       authorId,
     );
@@ -81,4 +83,5 @@ class CommentService {
   }
 }
 
-export default new CommentService(PostRepository, CommentRepository);
+const commentService = new CommentService(postRepository, commentRepository);
+export default commentService;
