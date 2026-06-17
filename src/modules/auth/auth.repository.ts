@@ -1,5 +1,8 @@
 import type { Types } from 'mongoose';
-import { RedisClient } from '../../database/redis.connection.js';
+import {
+  redisClient,
+  type RedisClient,
+} from '../../database/redis.connection.js';
 
 export class AuthRepository {
   private readonly KEYS = {
@@ -9,7 +12,7 @@ export class AuthRepository {
     jwtBlacklist: (jti: string) => `jwt:blacklist:${jti}`,
   } as const;
 
-  constructor(private readonly redisClient: typeof RedisClient) {}
+  constructor(private readonly redisClient: RedisClient) {}
 
   async getLoginAttempts(userId: Types.ObjectId) {
     return this.redisClient.get(this.KEYS.loginCounter(userId));
@@ -58,5 +61,5 @@ export class AuthRepository {
   }
 }
 
-const authRepository = new AuthRepository(RedisClient);
+const authRepository = new AuthRepository(redisClient);
 export default authRepository;

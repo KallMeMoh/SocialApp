@@ -4,7 +4,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { HttpError } from '../common/errors/http-error.js';
 import { isTokenTypeEnum, TokenTypeEnum } from '../common/types/auth.type.js';
 import { getSignature } from '../common/utils/auth/token-signature.js';
-import { RedisClient } from '../database/redis.connection.js';
+import { redisClient } from '../database/redis.connection.js';
 import { isUserRoleEnum } from '../common/types/user.type.js';
 import { Types } from 'mongoose';
 
@@ -46,7 +46,7 @@ export const auth = async (
     if (
       !jti ||
       !Types.ObjectId.isValid(sub ?? '') ||
-      (await RedisClient.get(`jwt:blacklist:${jti}`))
+      (await redisClient.get(`jwt:blacklist:${jti}`))
     )
       throw new HttpError(401, 'Invalid or malformed token');
 

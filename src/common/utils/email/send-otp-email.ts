@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { otpTemplate } from './templates/otp.js';
 import { transporter } from './transporter.js';
 import type { IUser } from '../../types/user.type.js';
-import { RedisClient } from '../../../database/redis.connection.js';
+import { redisClient } from '../../../database/redis.connection.js';
 
 export const sendOTPEmail = async (
   key: string,
@@ -11,7 +11,7 @@ export const sendOTPEmail = async (
   reason: string,
 ) => {
   const code = randomInt(100_000, 999_999).toString();
-  await RedisClient.set(`${key}`, `${code}`, {
+  await redisClient.set(`${key}`, `${code}`, {
     expiration: {
       type: 'EX',
       value: 300,

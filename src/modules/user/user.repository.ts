@@ -1,7 +1,10 @@
 import type { IUser } from '../../common/types/user.type.js';
 import type { AuthProviderEnum } from '../../common/types/auth.type.js';
 import { UserModel } from '../../database/models/user.model.js';
-import { RedisClient } from '../../database/redis.connection.js';
+import {
+  redisClient,
+  type RedisClient,
+} from '../../database/redis.connection.js';
 import type {
   ProjectionType,
   QueryOptions,
@@ -23,7 +26,7 @@ export class UserRepository {
       `user:2fa-activation-code:${userId}`,
   } as const;
 
-  constructor(private readonly redisClient: typeof RedisClient) {}
+  constructor(private readonly redisClient: RedisClient) {}
 
   async existsByEmail(email: string) {
     return UserModel.exists({ email });
@@ -122,5 +125,5 @@ export class UserRepository {
   }
 }
 
-const userRepository = new UserRepository(RedisClient);
+const userRepository = new UserRepository(redisClient);
 export default userRepository;
