@@ -1,43 +1,36 @@
 import z from 'zod';
-import {
-  email,
-  ln,
-  otp,
-  password,
-  token,
-  username,
-} from '../../common/validation/fields.js';
+import { authFields, sharedFields } from '../../common/validation/fields.js';
 
 export const signupSchema = z.object({
   body: z
     .object({
-      username,
-      email,
-      password,
-      confirm_password: password,
+      username: authFields.username,
+      email: authFields.email,
+      password: authFields.password,
+      confirm_password: authFields.password,
     })
     .refine((data) => data.password === data.confirm_password, {
       message: 'Passwords do not match',
       path: ['confirm_password'],
     }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
 
 export const loginSchema = z.object({
-  body: z.object({ email, password }),
+  body: z.object({ email: authFields.email, password: authFields.password }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
 
 export const confirmationSchema = z.object({
-  body: z.object({ otp, token }),
+  body: z.object({ otp: authFields.otp, token: authFields.token }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
@@ -45,16 +38,16 @@ export const confirmationSchema = z.object({
 export const resetPasswordSchema = z.object({
   body: z
     .object({
-      token,
-      new_password: password,
-      confirm_new_password: password,
+      token: authFields.token,
+      new_password: authFields.password,
+      confirm_new_password: authFields.password,
     })
     .refine((data) => data.new_password === data.confirm_new_password, {
       message: 'Passwords do not match',
       path: ['confirm_password'],
     }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({
     token: z.string().regex(/^[A-Za-z0-9]{64}$/, {
@@ -64,9 +57,9 @@ export const resetPasswordSchema = z.object({
 });
 
 export const forgetPasswordSchema = z.object({
-  body: z.object({ email }),
+  body: z.object({ email: authFields.email }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });

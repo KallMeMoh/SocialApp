@@ -1,41 +1,34 @@
 import { z } from 'zod';
-import {
-  id,
-  ln,
-  otp,
-  password,
-  username,
-  email,
-} from '../../common/validation/fields.js';
+import { sharedFields, authFields } from '../../common/validation/fields.js';
 
 export const userIdSchema = z.object({
   body: z.object({}),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
-  params: z.object({ userId: id }),
+  params: z.object({ userId: sharedFields.id }),
 });
 
 export const userProfileSchema = z.object({
   body: z.object({}),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
-  params: z.object({ username: username }),
+  params: z.object({ username: authFields.username }),
 });
 
 export const updateUserSchema = z.object({
-  body: z.object({ username, email }),
+  body: z.object({ username: authFields.username, email: authFields.email }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
 
 export const oneTimePasswordSchema = z.object({
-  body: z.object({ otp }),
+  body: z.object({ otp: authFields.otp }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
@@ -43,9 +36,9 @@ export const oneTimePasswordSchema = z.object({
 export const changePasswordSchema = z.object({
   body: z
     .object({
-      old_password: password,
-      new_password: password,
-      confirm_new_password: password,
+      old_password: authFields.password,
+      new_password: authFields.password,
+      confirm_new_password: authFields.password,
     })
     .refine((data) => data.new_password !== data.old_password, {
       message: 'New Password must be different from old password',
@@ -56,7 +49,7 @@ export const changePasswordSchema = z.object({
       path: ['confirm_new_password'],
     }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
@@ -66,7 +59,7 @@ export const avatarUploadSchema = z.object({
     fileType: z.enum(['image/jpeg', 'image/png', 'image/jpg', 'image/gif']),
   }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });

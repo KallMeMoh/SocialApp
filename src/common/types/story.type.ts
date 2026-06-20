@@ -1,16 +1,10 @@
 import type { Types } from 'mongoose';
-
-export enum StoryTypeEnum {
-  Image = 'image',
-  Video = 'video',
-  Text = 'text',
-}
+import type { Media } from './post.type.js';
 
 export interface IStory {
   author: Types.ObjectId;
-  type: StoryTypeEnum;
-  url: string | null;
-  text: string | null;
+  media: Media | null;
+  text: string;
   expiresAt: Date;
   deletedAt: Date | null;
 }

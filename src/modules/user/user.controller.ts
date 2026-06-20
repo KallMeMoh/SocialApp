@@ -11,10 +11,12 @@ import {
   userIdSchema,
   userProfileSchema,
 } from './user.dto.js';
+import { followRouter } from '../follow/follow.controller.js';
 
 export const userRouter = Router();
 
-userRouter.use('/:userId/chat', chatRouter);
+userRouter.use('/:userId', chatRouter);
+userRouter.use('/:userId', followRouter);
 
 userRouter.get('/:id', validate(userIdSchema), async (req, res) => {
   const user = await userService.getUserProfile(req.params);

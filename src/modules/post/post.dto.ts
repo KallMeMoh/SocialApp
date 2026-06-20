@@ -1,23 +1,16 @@
 import { z } from 'zod';
-import {
-  id,
-  ln,
-  postHashtags,
-  postMedia,
-  postMentions,
-  postText,
-} from '../../common/validation/fields.js';
+import { sharedFields, postFields } from '../../common/validation/fields.js';
 
 export const createPostSchema = z.object({
   body: z.object({
-    text: postText,
-    mentions: postMentions,
-    hashtags: postHashtags,
-    media: postMedia,
-    quotedPost: id.optional(),
+    text: postFields.postText,
+    mentions: postFields.postMentions,
+    hashtags: postFields.postHashtags,
+    media: postFields.postMedia,
+    quotedPost: sharedFields.id.optional(),
   }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
   params: z.object({}),
 });
@@ -25,9 +18,9 @@ export const createPostSchema = z.object({
 export const postIdSchema = z.object({
   body: z.object({}),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
-  params: z.object({ postId: id }),
+  params: z.object({ postId: sharedFields.id }),
 });
 
 export const updatePostSchema = z.object({
@@ -38,9 +31,9 @@ export const updatePostSchema = z.object({
       .max(1000, { error: 'Text must be at most 1000 characters' }),
   }),
 
-  query: z.object({ ln }),
+  query: z.object({ ln: sharedFields.ln }),
 
-  params: z.object({ postId: id }),
+  params: z.object({ postId: sharedFields.id }),
 });
 
 export type PostIdDTO = z.infer<typeof postIdSchema>;
