@@ -33,7 +33,9 @@ authRouter.post(
   '/login/confirm',
   validate(confirmationSchema),
   async (req, res) => {
-    const credentials = await authService.confirmLogin(req.body);
+    const { requires2FA, ...credentials } = await authService.confirmLogin(
+      req.body,
+    );
     return res
       .status(200)
       .json({ message: 'Logged in successfully', credentials });
